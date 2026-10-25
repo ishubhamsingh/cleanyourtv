@@ -118,8 +118,9 @@ TMDB settings any time.
    ```
 While something plays, a round **music button** joins the top-right buttons: three bars that move while music
 plays and rest while paused. **OK** on it drops a frosted-glass card over Home: art (or the app's icon), app, title,
-artist, a progress bar and previous / play-pause / next. **OK** on the top part opens the app's player, **hold OK**
-to dismiss until the next track, **Back** (or moving off the card) closes it. The listener reads media sessions only, never your notifications, and the launcher has no
+artist, a progress bar and previous / play-pause / next. **OK** on the top part opens the app's player. Any move off
+the card closes it (Down to the dock; Up, Left or Right back to the button), as do **Back**, opening an app, and
+*Dismiss* in the hold-OK menu; the button stays while music plays. The listener reads media sessions only, never your notifications, and the launcher has no
 internet access. Some apps (Spotify on TV) send no album art; the app's icon shows instead.
 
 ## Remote buttons that stopped working
