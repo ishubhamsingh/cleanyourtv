@@ -311,6 +311,12 @@
          Can also be set with "tile_menu": true in a theme's config.json. -->
     <bool name="tile_menu">false</bool>
 
+    <!-- Order of the grid below the dock (the dock keeps dock_apps): alphabetical (the default), recent (the app
+         Home opened last comes first) or frequent (most opened from Home, weighted to the last week or two). Only
+         launches from Home count, not a remote's own app button. A dynamic order replaces a Move-saved order for
+         grid tiles; the dock keeps its own. Can also be set with "grid_order" in a theme's config.json. -->
+    <string name="grid_order" translatable="false">alphabetical</string>
+
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
     <integer name="rows_below_dock">0</integer>

@@ -938,8 +938,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 break;
             case REFOCUS:
                 // The same tiles: only the focus goes back, as after a rebuild, without replaying the entrance.
+                // A recent / frequent grid_order rebuilds them, since the app just opened may have moved up.
                 tilesReady = false;
-                reloadApps(true, false, false);
+                reloadApps(true, adapter.takeUsageChanged(), false);
                 break;
             default:
                 break;

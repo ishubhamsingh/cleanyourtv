@@ -188,6 +188,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final float restNameAlpha;
     /** cinematic_home: only then does a launch record the last-opened app the shelf uses. */
     private final boolean cinematic;
+    /** grid_order (Config.GRID_*): alphabetical, or recent / frequent from launches out of Home. */
+    private final String gridOrder;
+    /** A launch since the last reload() may have changed a recent / frequent grid order. */
+    private boolean usageChanged;
     /** Dock order (config.xml dock_apps, or a theme's config.json). */
     private final List<String> favourites;
     /** Grid apps fill the dock slots dock_apps leaves free (config.xml, fill_dock). */
@@ -238,6 +242,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.singleRow = cfg.singleRow;
         this.restNameAlpha = cfg.alwaysShowNames ? 0.75f : 0f;
         this.cinematic = cfg.cinematicHome;
+        this.gridOrder = cfg.gridOrder;
         this.launchActions = cfg.launchActions;
         this.tileMenu = cfg.tileMenu;
         this.appLabels = cfg.appLabels;
@@ -306,7 +311,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 fresh.add(new Entry(label, component, banner, icon));
             }
         }
-        Collections.sort(fresh, (a, b) -> {
+        if (!Config.GRID_ALPHABETICAL.equals(gridOrder)) {
+            sortByUsage(fresh);
+        } else Collections.sort(fresh, (a, b) -> {
             // The owner's own order first; tiles it does not know (new installs) follow by the rule below.
             int saved = Order.compare(savedRanks, a.component.flattenToShortString(), b.component.flattenToShortString());
             if (saved != 0) return saved;
@@ -321,6 +328,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (ca != cb) return ca ? -1 : 1;
             return a.label.compareToIgnoreCase(b.label);
         });
+        usageChanged = false;
         // Retain the optional Default-home tile until dependent tile-ordering work is merged.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
@@ -519,7 +527,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         try {
             ctx.startActivity(i);
-            if (cinematic) LastOpened.record(ctx, e.pkg);
+            if (cinematic || Config.GRID_RECENT.equals(gridOrder)) LastOpened.record(ctx, e.pkg);
+            if (Config.GRID_FREQUENT.equals(gridOrder)) Frecency.record(ctx, e.pkg);
+            usageChanged = !Config.GRID_ALPHABETICAL.equals(gridOrder);
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
             }
@@ -547,6 +557,39 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public long getItemId(int position) {
         return isLibraryAt(position) ? Long.MIN_VALUE : items.get(position).component.flattenToShortString().hashCode();
+    }
+
+    /**
+     * grid_order recent / frequent: the dock as usual (saved order, then dock_apps), then the rest by use, most first,
+     * with apps Home never opened after them: cards, then alphabetical. A Move-saved order only places the dock here.
+     */
+    private void sortByUsage(List<Entry> fresh) {
+        boolean recent = Config.GRID_RECENT.equals(gridOrder);
+        Map<String, Double> use = new HashMap<>();
+        for (Entry e : fresh) {
+            use.put(e.pkg, recent ? (double) LastOpened.get(ctx, e.pkg) : Frecency.get(ctx, e.pkg));
+        }
+        Collections.sort(fresh, (a, b) -> {
+            boolean da = isDocked(a), db = isDocked(b);
+            if (da != db) return da ? -1 : 1;
+            if (da) {
+                int saved = Order.compare(savedRanks, a.component.flattenToShortString(), b.component.flattenToShortString());
+                if (saved != 0) return saved;
+                return Integer.compare(favourites.indexOf(a.pkg), favourites.indexOf(b.pkg));
+            }
+            int used = Double.compare(use.get(b.pkg), use.get(a.pkg));
+            if (used != 0) return used;
+            boolean ca = a.kind == Entry.CARD, cb = b.kind == Entry.CARD;
+            if (ca != cb) return ca ? -1 : 1;
+            return a.label.compareToIgnoreCase(b.label);
+        });
+    }
+
+    /** True once after an app was opened under a recent / frequent grid_order: Home should rebuild on return. */
+    boolean takeUsageChanged() {
+        boolean changed = usageChanged;
+        usageChanged = false;
+        return changed;
     }
 
     /** Uses this saved order and dock size from the next reload() (Order.ranks, Order.docked). */
