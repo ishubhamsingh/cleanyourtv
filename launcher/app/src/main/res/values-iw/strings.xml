@@ -163,4 +163,5 @@
     <string name="now_playing_previous">הקודם</string>
     <string name="now_playing_play_pause">הפעלה או השהיה</string>
     <string name="now_playing_next">הבא</string>
+    <string name="now_playing_dismiss">הסתרה</string>
 </resources>

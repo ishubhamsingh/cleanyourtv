@@ -13,5 +13,8 @@
   "settings_key_panel": true,
   "wallpaper_rotation_minutes": 30,
   "wallpaper_order": "shuffle",
-  "wallpaper_true_color": true
+  "wallpaper_true_color": true,
+  "show_network_pill": false,
+  "icon_only_inputs": true,
+  "columns": 6
 }

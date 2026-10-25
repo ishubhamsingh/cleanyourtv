@@ -69,6 +69,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -805,8 +806,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                // Back to the dock tile Up came from, not wherever the focus finder lands.
-                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                // The now-playing card first when it shows; else back to the dock tile Up came from.
+                if (nowPlayingShown()) findViewById(R.id.npInfo).requestFocus();
+                else focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
             int firstButton = btnSearch.getVisibility() == View.VISIBLE ? R.id.btnSearch
@@ -1201,6 +1203,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onStop();
         started = false;
         if (nowPlaying != null) nowPlaying.stop();
+        handler.removeCallbacks(progressTick);
         unregisterReceiver(timeReceiver);
         handler.removeCallbacks(clockCheck);
         stopped = true;
@@ -2058,57 +2061,136 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     // ---- Now playing -----------------------------------------------------------------------------
 
-    /** The top bar's card for the media playing in the background: art, title, artist and the controls. */
+    /** The card for the media playing in the background (now_playing_card.xml). */
     private void setUpNowPlaying() {
         nowPlaying = new NowPlaying(this, this::showTrack);
         ImageView art = findViewById(R.id.npArt);
         art.setOutlineProvider(new ViewOutlineProvider() {
             @Override
             public void getOutline(View view, Outline outline) {
-                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 6 * density);
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 10 * density);
             }
         });
         art.setClipToOutline(true);
-        findViewById(R.id.npInfo).setOnClickListener(v -> nowPlaying.open(this));
+        View info = findViewById(R.id.npInfo);
+        info.setOnClickListener(v -> nowPlaying.open(this));
+        info.setOnLongClickListener(v -> {
+            showNowPlayingMenu(v);
+            return true;
+        });
         findViewById(R.id.npPrev).setOnClickListener(v -> nowPlaying.previous());
         findViewById(R.id.npPlay).setOnClickListener(v -> nowPlaying.playPause());
         findViewById(R.id.npNext).setOnClickListener(v -> nowPlaying.next());
-        // Its own line under the pills: Up to the pills, Down back to the dock, and no wrap past its ends.
+        // One vertical path on the right: top bar - the card - its controls - the dock.
         boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
-        View.OnKeyListener keys = (v, keyCode, event) -> {
+        info.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) firstTopButton().requestFocus();
+            else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) findViewById(R.id.npPlay).requestFocus();
+            return keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                    || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
+        });
+        View.OnKeyListener controls = (v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                firstTopButton().requestFocus();
+                findViewById(R.id.npInfo).requestFocus();
                 return true;
             }
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                focusTile(singleRow ? lastFocused : Math.min(lastFocused, COLUMNS - 1));
                 return true;
             }
-            int left = rtl ? R.id.npNext : R.id.npInfo, right = rtl ? R.id.npInfo : R.id.npNext;
+            int left = rtl ? R.id.npNext : R.id.npPrev, right = rtl ? R.id.npPrev : R.id.npNext;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == left;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == right;
         };
-        for (int id : new int[]{R.id.npInfo, R.id.npPrev, R.id.npPlay, R.id.npNext}) findViewById(id).setOnKeyListener(keys);
+        for (int id : new int[]{R.id.npPrev, R.id.npPlay, R.id.npNext}) findViewById(id).setOnKeyListener(controls);
     }
 
-    private void showTrack(NowPlaying.Track track) {
-        if (track == null) {
-            // Focus on the card would be lost with it: hand it to the next pill first.
-            if (nowPlayingCard.hasFocus()) firstTopButton().requestFocus();
-            nowPlayingCard.setVisibility(View.GONE);
+    /** The playing track's key the owner dismissed: the card stays away until another track plays. */
+    private String nowPlayingDismissed;
+    private NowPlaying.Track track;
+    private final Runnable progressTick = new Runnable() {
+        @Override
+        public void run() {
+            if (track == null || nowPlayingCard.getVisibility() != View.VISIBLE) return;
+            updateProgress();
+            if (track.playing) handler.postDelayed(this, 1000);
+        }
+    };
+
+    private boolean nowPlayingShown() {
+        return nowPlayingCard != null && nowPlayingCard.getVisibility() == View.VISIBLE;
+    }
+
+    private void showTrack(NowPlaying.Track t) {
+        track = t;
+        handler.removeCallbacks(progressTick);
+        boolean show = t != null && !t.key().equals(nowPlayingDismissed);
+        if (t != null && !t.key().equals(nowPlayingDismissed)) nowPlayingDismissed = null;
+        if (!show) {
+            hideNowPlaying();
             return;
         }
-        ((TextView) findViewById(R.id.npTitle)).setText(track.title);
+        ((TextView) findViewById(R.id.npApp)).setText(t.app);
+        ((TextView) findViewById(R.id.npTitle)).setText(t.title);
         TextView artist = findViewById(R.id.npArtist);
-        artist.setText(track.artist);
-        artist.setVisibility(track.artist.isEmpty() ? View.GONE : View.VISIBLE);
+        artist.setText(t.artist);
+        artist.setVisibility(t.artist.isEmpty() ? View.GONE : View.VISIBLE);
         ImageView art = findViewById(R.id.npArt);
-        if (track.art != null) art.setImageBitmap(track.art);
-        else art.setImageDrawable(appIcon(track.pkg));
+        if (t.art != null) art.setImageBitmap(t.art);
+        else art.setImageDrawable(appIcon(t.pkg));
         ((TextView) findViewById(R.id.npPlay)).setCompoundDrawablesRelativeWithIntrinsicBounds(
-                track.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
-        nowPlayingCard.setVisibility(View.VISIBLE);
+                t.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
+        updateProgress();
+        if (!nowPlayingShown()) {
+            nowPlayingCard.setAlpha(0f);
+            nowPlayingCard.setVisibility(View.VISIBLE);
+            nowPlayingCard.animate().alpha(1f).setDuration(animations ? 220 : 0).start();
+        }
+        fitHeroBesideCard();
+        if (t.playing) handler.postDelayed(progressTick, 1000);
+    }
+
+    private void updateProgress() {
+        ProgressBar bar = findViewById(R.id.npProgress);
+        float f = track == null ? -1f : track.progress(android.os.SystemClock.elapsedRealtime());
+        bar.setVisibility(f < 0 ? View.INVISIBLE : View.VISIBLE);
+        if (f >= 0) bar.setProgress(Math.round(f * bar.getMax()));
+    }
+
+    private void hideNowPlaying() {
+        if (!nowPlayingShown()) return;
+        // Focus would be lost with the card: hand it to the dock first.
+        if (nowPlayingCard.hasFocus()) focusTile(Math.min(lastFocused, COLUMNS - 1));
+        nowPlayingCard.setVisibility(View.GONE);
+        fitHeroBesideCard();
+    }
+
+    /** Long titles in the top shelf stop short of the card instead of running under it. */
+    private void fitHeroBesideCard() {
+        int max = Integer.MAX_VALUE;
+        if (nowPlayingShown() && root.getWidth() > 0) {
+            max = Math.max((int) (200 * density), root.getWidth() - (int) ((68 + 320 + 56 + 32) * density));
+        }
+        heroName.setMaxWidth(max);
+        heroName.setEllipsize(android.text.TextUtils.TruncateAt.END);
+    }
+
+    /** Hold OK on the card: open the player, or dismiss the card until the next track. */
+    private void showNowPlayingMenu(View anchor) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (220 * density));
+        if (track != null) addSettingsMenuRow(rows, popup, getString(R.string.discover_open_in, track.app), () -> nowPlaying.open(this));
+        addSettingsMenuRow(rows, popup, getString(R.string.now_playing_dismiss), () -> {
+            if (track != null) nowPlayingDismissed = track.key();
+            hideNowPlaying();
+        });
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (220 * density), panel.getMeasuredWidth()));
+        showNear(popup, panel, anchor);
+        rows.getChildAt(0).requestFocus();
     }
 
     private Drawable appIcon(String pkg) {
@@ -2603,6 +2685,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            if (position < COLUMNS && nowPlayingShown()) {   // the card sits between the dock and the top bar
+                findViewById(R.id.npPlay).requestFocus();
+                return true;
+            }
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
             target = position - COLUMNS;
         } else {

@@ -26,17 +26,43 @@ final class NowPlaying {
 
     /** What the card shows; null when nothing is playing or paused. */
     static final class Track {
-        final String pkg, title, artist;
+        final String pkg, app, title, artist;
         final Bitmap art;
         final boolean playing;
+        /** Position (ms) at `at` (elapsedRealtime), the speed it moves at, and the track's length; 0 when unknown. */
+        final long position, at, duration;
+        final float speed;
 
-        Track(String pkg, String title, String artist, Bitmap art, boolean playing) {
+        Track(String pkg, String app, String title, String artist, Bitmap art, boolean playing, long position, long at,
+              float speed, long duration) {
             this.pkg = pkg;
+            this.app = app;
             this.title = title;
             this.artist = artist;
             this.art = art;
             this.playing = playing;
+            this.position = position;
+            this.at = at;
+            this.speed = speed;
+            this.duration = duration;
         }
+
+        /** The same app and title: a dismissed card stays away until this changes. */
+        String key() {
+            return pkg + "|" + title;
+        }
+
+        /** 0..1 of the way through at `now` (elapsedRealtime); -1 when the length is unknown. */
+        float progress(long now) {
+            return fraction(position, at, speed, duration, playing, now);
+        }
+    }
+
+    /** Where playback is: the reported position, moved on by the elapsed time while playing, over the length. */
+    static float fraction(long position, long at, float speed, long duration, boolean playing, long now) {
+        if (duration <= 0 || position < 0) return -1f;
+        long p = position + (playing && at > 0 ? (long) ((now - at) * speed) : 0);
+        return Math.max(0f, Math.min(1f, p / (float) duration));
     }
 
     interface Listener {
@@ -176,7 +202,10 @@ final class NowPlaying {
             if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
         }
         PlaybackState s = c.getPlaybackState();
-        return new Track(c.getPackageName(), title, artist, art, s != null && rank(s.getState()) == 2);
+        long duration = m == null ? 0 : m.getLong(MediaMetadata.METADATA_KEY_DURATION);
+        return new Track(c.getPackageName(), appLabel(c.getPackageName()), title, artist, art,
+                s != null && rank(s.getState()) == 2, s == null ? -1 : s.getPosition(),
+                s == null ? 0 : s.getLastPositionUpdateTime(), s == null ? 0f : s.getPlaybackSpeed(), duration);
     }
 
     private static String text(MediaMetadata m, String... keys) {

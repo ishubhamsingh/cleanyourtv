@@ -27,4 +27,17 @@ public class NowPlayingTest {
         assertEquals(-1, NowPlaying.choose(new int[]{0, 1, 7}, new long[]{1, 2, 3}));
         assertEquals(-1, NowPlaying.choose(new int[0], new long[0]));
     }
+
+    @Test
+    public void progressMovesOnWhilePlayingAndStopsWhilePaused() {
+        // 30 s into a 120 s track, reported at t=1000; it is now t=31000.
+        assertEquals(0.5f, NowPlaying.fraction(30_000, 1_000, 1f, 120_000, true, 31_000), 1e-6);
+        assertEquals(0.25f, NowPlaying.fraction(30_000, 1_000, 1f, 120_000, false, 31_000), 1e-6);
+    }
+
+    @Test
+    public void progressStaysInsideTheTrackAndIsUnknownWithoutALength() {
+        assertEquals(1f, NowPlaying.fraction(110_000, 1_000, 1f, 120_000, true, 60_000), 1e-6);
+        assertEquals(-1f, NowPlaying.fraction(30_000, 1_000, 1f, 0, true, 31_000), 1e-6);
+    }
 }

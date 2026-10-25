@@ -29,7 +29,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Now playing** | A card under the top bar with what Spotify or any media app plays in the background: art, title, artist, previous / play-pause / next. | `now_playing` + one ADB grant |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
-| **my-glass theme** | The glass look with 14 rotating landscapes, stats line and a 3-minute idle clock. | `themes/my-glass` |
+| **my-glass theme** | The glass look with 14 rotating landscapes, 6 app columns, three round top buttons (search, inputs, settings), stats line and a 3-minute idle clock. | `themes/my-glass` |
 
 ## Set up a TV from scratch
 
@@ -116,8 +116,9 @@ TMDB settings any time.
    ```bash
    adb shell cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener
    ```
-The card appears under the top bar while something plays or is paused. **Up** from the dock reaches it; **OK** on
-the art opens the app. The listener reads media sessions only, never your notifications, and the launcher has no
+A frosted-glass card under the top-right buttons, while something plays or is paused: art (or the app's icon), app,
+title, artist, a progress bar and previous / play-pause / next. **Up** from the dock reaches the controls; **OK** on
+the top part opens the app's player; **hold OK** to dismiss it until the next track. The listener reads media sessions only, never your notifications, and the launcher has no
 internet access. Some apps (Spotify on TV) send no album art; the app's icon shows instead.
 
 ## Remote buttons that stopped working

@@ -96,6 +96,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static final float FOCUS_SCALE = 1.10f;
+    /** Discover's posters are sized for at most this many across, however many app columns the grid has. */
+    static final int POSTER_COLUMNS = 4;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
 
@@ -445,8 +447,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 spacer.setFocusable(false);
                 return new RecyclerView.ViewHolder(spacer) { };
             }
-            int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, d);
-            return new RecyclerView.ViewHolder(shelf.create(parent, w, tileHeightPx(w), inner / dockSize)) { };
+            // Posters stay at least as large as four across: with more app columns (smaller tiles), artwork and titles
+            // still read from the sofa.
+            int posterColumns = Math.min(dockSize, POSTER_COLUMNS);
+            int w = tileWidthPx(inner, parent.getHeight(), posterColumns, rowsBelowDock, dockTitle, dockRow, d);
+            return new RecyclerView.ViewHolder(shelf.create(parent, w, tileHeightPx(w), inner / posterColumns)) { };
         }
         if (viewType == 1) {
             View row = LayoutInflater.from(ctx).inflate(R.layout.row_app_library, parent, false);

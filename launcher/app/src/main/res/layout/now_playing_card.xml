@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Now playing (config now_playing): one glass card with the media playing in the background: art (or the app's icon),
+     app, title and artist; its progress; previous, play/pause and next. OK on the top part opens the app's own player,
+     holding OK offers Dismiss. Placed by the include (under the top-right buttons); shown only while something plays
+     or is paused. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nowPlaying"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/np_card_bg"
+    android:padding="10dp"
+    android:elevation="0dp"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:id="@+id/npInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="6dp"
+        android:background="@drawable/np_info_bg"
+        android:focusable="true"
+        android:clickable="true"
+        android:longClickable="true">
+
+        <ImageView
+            android:id="@+id/npArt"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/npApp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textColor="#99FFFFFF"
+                android:textSize="10sp"
+                android:fontFamily="@string/font_medium"
+                android:letterSpacing="0.14"
+                android:textAllCaps="true"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/npTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textColor="#FFFFFFFF"
+                android:textSize="15sp"
+                android:fontFamily="@string/font_medium"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/npArtist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp"
+                android:fontFamily="@string/font_body"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/npProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginTop="10dp"
+        android:max="1000"
+        android:progressDrawable="@drawable/np_progress" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:clipChildren="false">
+
+        <TextView
+            android:id="@+id/npPrev"
+            style="@style/TopButtonIcon"
+            android:layout_marginStart="0dp"
+            android:contentDescription="@string/now_playing_previous"
+            android:drawableStart="@drawable/ic_skip_previous" />
+
+        <TextView
+            android:id="@+id/npPlay"
+            style="@style/TopButtonIcon"
+            android:layout_marginStart="14dp"
+            android:contentDescription="@string/now_playing_play_pause"
+            android:drawableStart="@drawable/ic_pause" />
+
+        <TextView
+            android:id="@+id/npNext"
+            style="@style/TopButtonIcon"
+            android:layout_marginStart="14dp"
+            android:contentDescription="@string/now_playing_next"
+            android:drawableStart="@drawable/ic_skip_next" />
+    </LinearLayout>
+</LinearLayout>

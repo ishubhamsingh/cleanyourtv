@@ -387,99 +387,6 @@
 
             </LinearLayout>
 
-            <!-- Now playing (config now_playing): the media playing in the background (Spotify and the like), with its
-                 controls, on its own line under the pills. Shown only while something plays or is paused; OK on the art
-                 opens the app. -->
-            <LinearLayout
-                android:id="@+id/nowPlaying"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/topButtons"
-                android:layout_alignParentStart="true"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:id="@+id/npInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="42dp"
-                    android:layout_marginStart="10dp"
-                    android:paddingStart="5dp"
-                    android:paddingEnd="16dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/pill_bg"
-                    android:focusable="true"
-                    android:clickable="true"
-                    android:nextFocusDown="@+id/grid">
-
-                    <ImageView
-                        android:id="@+id/npArt"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:scaleType="centerCrop"
-                        android:contentDescription="@null" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:duplicateParentState="true"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/npTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:maxWidth="220dp"
-                            android:singleLine="true"
-                            android:ellipsize="end"
-                            android:textColor="@drawable/pill_text"
-                            android:duplicateParentState="true"
-                            android:textSize="13sp"
-                            android:fontFamily="@string/font_medium"
-                            android:includeFontPadding="false" />
-
-                        <TextView
-                            android:id="@+id/npArtist"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:maxWidth="220dp"
-                            android:singleLine="true"
-                            android:ellipsize="end"
-                            android:textColor="@drawable/pill_text_dim"
-                            android:duplicateParentState="true"
-                            android:textSize="11sp"
-                            android:fontFamily="@string/font_body"
-                            android:includeFontPadding="false" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/npPrev"
-                    style="@style/TopButtonIcon"
-                    android:contentDescription="@string/now_playing_previous"
-                    android:drawableStart="@drawable/ic_skip_previous"
-                    android:nextFocusDown="@+id/grid" />
-
-                <TextView
-                    android:id="@+id/npPlay"
-                    style="@style/TopButtonIcon"
-                    android:contentDescription="@string/now_playing_play_pause"
-                    android:drawableStart="@drawable/ic_pause"
-                    android:nextFocusDown="@+id/grid" />
-
-                <TextView
-                    android:id="@+id/npNext"
-                    style="@style/TopButtonIcon"
-                    android:contentDescription="@string/now_playing_next"
-                    android:drawableStart="@drawable/ic_skip_next"
-                    android:nextFocusDown="@+id/grid" />
-            </LinearLayout>
         </RelativeLayout>
 
         <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
@@ -506,6 +413,16 @@
     </LinearLayout>
 
     <!-- The single floating glass highlight that springs between tiles. -->
+    <!-- Now playing (config now_playing): see now_playing_card.xml. Floats under the top-right buttons. -->
+    <include
+        layout="@layout/now_playing_card"
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="116dp"
+        android:layout_marginStart="56dp"
+        android:layout_marginEnd="56dp" />
+
     <com.gathin.tvhome.GlassView
         android:id="@+id/glass"
         android:layout_width="10dp"
