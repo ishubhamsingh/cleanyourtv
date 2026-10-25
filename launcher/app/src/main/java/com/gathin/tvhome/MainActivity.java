@@ -173,6 +173,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View btnInputs;
     /** Discover (config discover): the rows under the dock and the search pill, when the extension is there. */
     private boolean discoverOn;
+    /** The dock's band, and whether the dock is faded out because a Discover row has focus. */
+    private DockDecoration dockDecoration;
+    private boolean dockFaded;
+    private android.animation.ValueAnimator dockFadeAnimator;
     private Discover discover;
     private Shelf shelf;
     private android.database.ContentObserver discoverObserver;
@@ -588,7 +592,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void onChildViewDetachedFromWindow(@NonNull View v) {
             }
         });
-        if (dockRow) grid.addItemDecoration(new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
+        if (dockRow) grid.addItemDecoration(dockDecoration = new DockDecoration(COLUMNS, density, cinematic, cfg.alwaysShowNames, cfg.dockOpacity, cfg.dockGlass, cfg.dockEvenPadding, cfg.dockBand,
                 singleRow, cfg.dockBandAll));
         if (cfg.fadeRows) TopFade.attach(grid, 48 * density);
         // Reduced motion: the tiles are simply there, with no entrance (reloadApps skips it there too).
@@ -1488,6 +1492,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** A tile's alpha: dim unless it is the carried one, or, in edit-dock mode, a dock tile other than the chosen place. */
     private float tileAlpha(int pos) {
+        if (dockFaded && pos >= 0 && pos < COLUMNS) return 0f;
         if (movingKey != null) {
             return pos != RecyclerView.NO_POSITION && movingKey.equals(adapter.keyAt(pos)) ? 1f : 0.45f;
         }
@@ -1631,6 +1636,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         shelfFocusRow = -1;
+        fadeDock(false);
+        if (shelf != null) shelf.showFrom(-1);
         if (pendingShelfRows != null) {
             List<Discover.Row> rows = pendingShelfRows;
             pendingShelfRows = null;
@@ -2065,6 +2072,36 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (had != !rows.isEmpty() || adapter.gridStart() < 0 && !rows.isEmpty()) reloadApps(false);
     }
 
+    /**
+     * Fades the dock (its tiles and band) out while a Discover row has focus, so the title's top shelf has the room
+     * the dock's shelf had, and back in when focus returns to a tile.
+     */
+    private void fadeDock(boolean out) {
+        if (dockFaded == out) return;
+        dockFaded = out;
+        float target = out ? 0f : 1f;
+        int ms = !animations ? 0 : reducedMotion ? Motion.REDUCED_MS : 220;
+        for (int i = 0; i < COLUMNS; i++) {
+            RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(i);
+            if (vh == null) continue;
+            if (ms == 0) vh.itemView.setAlpha(out ? 0f : tileAlpha(i));
+            else vh.itemView.animate().alpha(out ? 0f : tileAlpha(i)).setDuration(ms).start();
+        }
+        if (dockDecoration == null) return;
+        if (dockFadeAnimator != null) dockFadeAnimator.cancel();
+        if (ms == 0) {
+            dockDecoration.setFade(target);
+            grid.invalidate();
+            return;
+        }
+        dockFadeAnimator = android.animation.ValueAnimator.ofFloat(dockDecoration.fade(), target).setDuration(ms);
+        dockFadeAnimator.addUpdateListener(a -> {
+            dockDecoration.setFade((float) a.getAnimatedValue());
+            grid.invalidate();
+        });
+        dockFadeAnimator.start();
+    }
+
     private void focusShelfRow(int row) {
         cancelPendingFocusScroll();
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(COLUMNS);
@@ -2081,8 +2118,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onPosterFocused(Discover.Item item, View poster, View row) {
             hideGlass();
+            fadeDock(true);
             ViewGroup block = (ViewGroup) row.getParent();
             shelfFocusRow = block == null ? 0 : block.indexOfChild(row);
+            shelf.showFrom(shelfFocusRow);
             // Park the focused row where the dock sits, with the title's top shelf above it, like the dock.
             Rect r = new Rect(0, 0, row.getWidth(), row.getHeight());
             grid.offsetDescendantRectToMyCoords(row, r);

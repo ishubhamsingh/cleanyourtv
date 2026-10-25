@@ -199,6 +199,22 @@ final class Shelf {
         return rows.size();
     }
 
+    /**
+     * The rows above `index` fade out, so the focused row's title has the room above it (the dock fades the same
+     * way); -1 shows every row again, for when focus leaves the rows.
+     */
+    void showFrom(int index) {
+        if (block == null) return;
+        for (int i = 0; i < block.getChildCount(); i++) {
+            View row = block.getChildAt(i);
+            float target = index >= 0 && i < index ? 0f : 1f;
+            if (row.getAlpha() == target) continue;
+            row.animate().cancel();
+            if (animations) row.animate().alpha(target).setDuration(220).start();
+            else row.setAlpha(target);
+        }
+    }
+
     /** Posters: Discover titles, or (in search) apps. Sized like the app tiles. */
     static final class PosterAdapter extends RecyclerView.Adapter<PosterAdapter.Holder> {
         interface Listener {

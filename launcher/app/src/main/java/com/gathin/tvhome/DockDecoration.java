@@ -19,6 +19,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
+    /** 1 drawn as usual, 0 not at all: Discover fades the dock out while a poster row has focus. */
+    private float fade = 1f;
 
     /** Extra band below the tiles for their names (always_show_names), in px. */
     private final float namesRoom;
@@ -85,9 +87,17 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         }
     }
 
+    void setFade(float fade) {
+        this.fade = Math.max(0f, Math.min(1f, fade));
+    }
+
+    float fade() {
+        return fade;
+    }
+
     @Override
     public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        if (!bandVisible) return;
+        if (!bandVisible || fade <= 0f) return;
         boolean any = false;
         int cardWidth = 0;
         for (int i = 0; i < parent.getChildCount(); i++) {
@@ -146,7 +156,10 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
             shaderTop = rect.top;
             shaderBottom = rect.bottom;
         }
+        int saved = fade < 1f ? c.saveLayerAlpha(rect.left - density, rect.top - density, rect.right + density,
+                rect.bottom + density, Math.round(255 * fade)) : -1;
         c.drawRoundRect(rect, radius, radius, band);
         c.drawRoundRect(rect, radius, radius, edge);
+        if (saved >= 0) c.restoreToCount(saved);
     }
 }
