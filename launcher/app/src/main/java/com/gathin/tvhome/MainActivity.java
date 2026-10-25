@@ -2245,8 +2245,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (240 * density), panel.getMeasuredWidth()));
-        dropIn(popup, panel, poster, Gravity.START);
+        showNear(popup, panel, poster);
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** Opens a menu under its card, or above it when it would not fit below (the rows and the dock sit low). */
+    private void showNear(PopupWindow popup, View panel, View card) {
+        int[] at = new int[2];
+        card.getLocationInWindow(at);
+        int gap = (int) (10 * density), height = panel.getMeasuredHeight();
+        if (at[1] + card.getHeight() + gap + height <= root.getHeight()) {
+            dropIn(popup, panel, card, Gravity.START);
+            return;
+        }
+        panel.setAlpha(0f);
+        panel.setPivotY(height);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY(8 * density);
+        popup.showAtLocation(root, Gravity.NO_GRAVITY, at[0], Math.max(0, at[1] - gap - height));
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
     }
 
     private void hideHero() {
@@ -3512,20 +3530,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
         // Dock tiles sit near the bottom of the screen: open the menu above the tile when it would not fit below.
-        int[] at = new int[2];
-        card.getLocationInWindow(at);
-        int gap = (int) (10 * density), height = panel.getMeasuredHeight();
-        if (at[1] + card.getHeight() + gap + height <= root.getHeight()) {
-            dropIn(popup, panel, card, Gravity.START);
-        } else {
-            panel.setAlpha(0f);
-            panel.setPivotY(height);
-            panel.setScaleY(0.92f);
-            panel.setTranslationY(8 * density);
-            popup.showAtLocation(root, Gravity.NO_GRAVITY, at[0], Math.max(0, at[1] - gap - height));
-            panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
-                    .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
-        }
+        showNear(popup, panel, card);
         rows.getChildAt(0).requestFocus();
     }
 
