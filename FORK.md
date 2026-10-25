@@ -26,7 +26,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Open the title itself** | OK on a poster opens that show's page in its app (Netflix, JioHotstar, Prime Video, Apple TV...), not just the app. Links are fetched while the poster has focus, so OK is instant. | `watchmode_key` (optional) |
 | **Taste** | Hold OK on a poster: *More like this* or *Not interested*. Every tab re-orders by the genres and languages you like; no app may fill a tab. | automatic |
 | **TMDB account** | *More like this* adds to your TMDB Favourites, *Not interested* rates 2/10; both are read back after a reinstall. | `tmdb_session`, `tmdb_account` (optional) |
-| **Now playing** | A card under the top bar with what Spotify or any media app plays in the background: art, title, artist, previous / play-pause / next. | `now_playing` + one ADB grant |
+| **Now playing** | An animated music button in the top bar while Spotify or any media app plays; OK opens a glass card with art, title, artist, progress and previous / play-pause / next. | `now_playing` + one ADB grant |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
 | **my-glass theme** | The glass look with 14 rotating landscapes, 6 app columns, three round top buttons (search, inputs, settings), stats line and a 3-minute idle clock. | `themes/my-glass` |
@@ -116,9 +116,10 @@ TMDB settings any time.
    ```bash
    adb shell cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener
    ```
-A frosted-glass card under the top-right buttons, while something plays or is paused: art (or the app's icon), app,
-title, artist, a progress bar and previous / play-pause / next. **Up** from the dock reaches the controls; **OK** on
-the top part opens the app's player; **hold OK** to dismiss it until the next track. The listener reads media sessions only, never your notifications, and the launcher has no
+While something plays, a round **music button** joins the top-right buttons: three bars that move while music
+plays and rest while paused. **OK** on it drops a frosted-glass card over Home: art (or the app's icon), app, title,
+artist, a progress bar and previous / play-pause / next. **OK** on the top part opens the app's player, **hold OK**
+to dismiss until the next track, **Back** (or moving off the card) closes it. The listener reads media sessions only, never your notifications, and the launcher has no
 internet access. Some apps (Spotify on TV) send no album art; the app's icon shows instead.
 
 ## Remote buttons that stopped working

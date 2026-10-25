@@ -187,6 +187,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Now playing (config now_playing): the top bar's card and what feeds it; null when off. */
     private NowPlaying nowPlaying;
     private View nowPlayingCard;
+    private TextView btnMusic;
+    private EqualizerDrawable equalizer;
     /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
     private int shelfReturnColumn;
     /** The row a poster was focused in, to go back to it after an app; -1 when focus is on the tiles. */
@@ -724,6 +726,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnInputs = findViewById(R.id.btnInputs);
         btnSearch = findViewById(R.id.btnSearch);
         nowPlayingCard = findViewById(R.id.nowPlaying);
+        btnMusic = findViewById(R.id.btnMusic);
         if (cfg.nowPlaying) setUpNowPlaying();
         if (discoverOn) {
             btnSearch.setVisibility(View.VISIBLE);
@@ -806,12 +809,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                // The now-playing card first when it shows; else back to the dock tile Up came from.
-                if (nowPlayingShown()) findViewById(R.id.npInfo).requestFocus();
-                else focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                // Back to the dock tile Up came from, not wherever the focus finder lands.
+                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnSearch.getVisibility() == View.VISIBLE ? R.id.btnSearch
+            int firstButton = btnMusic.getVisibility() == View.VISIBLE ? R.id.btnMusic
+                    : btnSearch.getVisibility() == View.VISIBLE ? R.id.btnSearch
                     : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
@@ -820,13 +823,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         };
         btnInputs.setOnKeyListener(pillKeys);
         btnSearch.setOnKeyListener(pillKeys);
+        btnMusic.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnSearch, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings,
+            List<View> pills = new ArrayList<>(Arrays.asList(btnMusic, btnSearch, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings,
                     findViewById(R.id.npInfo), findViewById(R.id.npPrev), findViewById(R.id.npPlay), findViewById(R.id.npNext)));
             pills.addAll(topAppButtons);
             for (View button : pills) {
@@ -1204,6 +1208,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         started = false;
         if (nowPlaying != null) nowPlaying.stop();
         handler.removeCallbacks(progressTick);
+        if (equalizer != null) equalizer.stop();
+        closeNowPlaying(false);
         unregisterReceiver(timeReceiver);
         handler.removeCallbacks(clockCheck);
         stopped = true;
@@ -1618,7 +1624,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onBackPressed() {
-        // Home screen: Back goes nowhere.
+        // Home screen: Back goes nowhere, except out of the now-playing card.
+        if (nowPlayingShown()) closeNowPlaying(false);
     }
 
     // ---- glass highlight -------------------------------------------------------------------------
@@ -2064,6 +2071,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The card for the media playing in the background (now_playing_card.xml). */
     private void setUpNowPlaying() {
         nowPlaying = new NowPlaying(this, this::showTrack);
+        equalizer = new EqualizerDrawable(Math.round(22 * density));
+        btnMusic.setCompoundDrawablesRelativeWithIntrinsicBounds(equalizer, null, null, null);
+        btnMusic.setOnClickListener(v -> openNowPlaying());
+        // The card is an overlay: it closes as soon as focus leaves it.
+        getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
+            if (nowPlayingShown() && (newF == null || !isInside(newF, nowPlayingCard))) closeNowPlaying(false);
+        });
         ImageView art = findViewById(R.id.npArt);
         art.setOutlineProvider(new ViewOutlineProvider() {
             @Override
@@ -2085,7 +2099,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
         info.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) firstTopButton().requestFocus();
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) btnMusic.requestFocus();
             else if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) findViewById(R.id.npPlay).requestFocus();
             return keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                     || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
@@ -2096,10 +2110,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 findViewById(R.id.npInfo).requestFocus();
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                focusTile(singleRow ? lastFocused : Math.min(lastFocused, COLUMNS - 1));
-                return true;
-            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;   // the card's bottom edge
             int left = rtl ? R.id.npNext : R.id.npPrev, right = rtl ? R.id.npPrev : R.id.npNext;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == left;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == right;
@@ -2129,9 +2140,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean show = t != null && !t.key().equals(nowPlayingDismissed);
         if (t != null && !t.key().equals(nowPlayingDismissed)) nowPlayingDismissed = null;
         if (!show) {
-            hideNowPlaying();
+            closeNowPlaying(true);
+            if (btnMusic.hasFocus()) findViewById(R.id.btnSearch).requestFocus();
+            btnMusic.setVisibility(View.GONE);
+            equalizer.stop();
             return;
         }
+        btnMusic.setVisibility(View.VISIBLE);
+        if (t.playing && animations && !reducedMotion) equalizer.start();
+        else equalizer.stop();
         ((TextView) findViewById(R.id.npApp)).setText(t.app);
         ((TextView) findViewById(R.id.npTitle)).setText(t.title);
         TextView artist = findViewById(R.id.npArtist);
@@ -2143,13 +2160,37 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ((TextView) findViewById(R.id.npPlay)).setCompoundDrawablesRelativeWithIntrinsicBounds(
                 t.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
         updateProgress();
-        if (!nowPlayingShown()) {
-            nowPlayingCard.setAlpha(0f);
-            nowPlayingCard.setVisibility(View.VISIBLE);
-            nowPlayingCard.animate().alpha(1f).setDuration(animations ? 220 : 0).start();
+        if (t.playing && nowPlayingShown()) handler.postDelayed(progressTick, 1000);
+    }
+
+    /** The music button: the card drops in over Home, under the top-right buttons, with focus on play/pause. */
+    private void openNowPlaying() {
+        if (track == null) return;
+        nowPlayingCard.setAlpha(0f);
+        nowPlayingCard.setTranslationY(-8 * density);
+        nowPlayingCard.setVisibility(View.VISIBLE);
+        nowPlayingCard.animate().alpha(1f).translationY(0f).setDuration(animations && !reducedMotion ? 200 : 0).start();
+        updateProgress();
+        handler.removeCallbacks(progressTick);
+        if (track.playing) handler.postDelayed(progressTick, 1000);
+        findViewById(R.id.npPlay).requestFocus();
+    }
+
+    /** Closes the card; `toDock` when the button itself goes away, else focus stays where it went. */
+    private void closeNowPlaying(boolean toDock) {
+        if (!nowPlayingShown()) return;
+        boolean hadFocus = nowPlayingCard.hasFocus();
+        nowPlayingCard.setVisibility(View.GONE);
+        handler.removeCallbacks(progressTick);
+        if (hadFocus) {
+            if (toDock || btnMusic.getVisibility() != View.VISIBLE) focusTile(Math.min(lastFocused, COLUMNS - 1));
+            else btnMusic.requestFocus();
         }
-        fitHeroBesideCard();
-        if (t.playing) handler.postDelayed(progressTick, 1000);
+    }
+
+    private static boolean isInside(View v, View parent) {
+        for (android.view.ViewParent p = v.getParent(); p != null; p = p.getParent()) if (p == parent) return true;
+        return v == parent;
     }
 
     private void updateProgress() {
@@ -2157,24 +2198,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float f = track == null ? -1f : track.progress(android.os.SystemClock.elapsedRealtime());
         bar.setVisibility(f < 0 ? View.INVISIBLE : View.VISIBLE);
         if (f >= 0) bar.setProgress(Math.round(f * bar.getMax()));
-    }
-
-    private void hideNowPlaying() {
-        if (!nowPlayingShown()) return;
-        // Focus would be lost with the card: hand it to the dock first.
-        if (nowPlayingCard.hasFocus()) focusTile(Math.min(lastFocused, COLUMNS - 1));
-        nowPlayingCard.setVisibility(View.GONE);
-        fitHeroBesideCard();
-    }
-
-    /** Long titles in the top shelf stop short of the card instead of running under it. */
-    private void fitHeroBesideCard() {
-        int max = Integer.MAX_VALUE;
-        if (nowPlayingShown() && root.getWidth() > 0) {
-            max = Math.max((int) (200 * density), root.getWidth() - (int) ((68 + 320 + 56 + 32) * density));
-        }
-        heroName.setMaxWidth(max);
-        heroName.setEllipsize(android.text.TextUtils.TruncateAt.END);
     }
 
     /** Hold OK on the card: open the player, or dismiss the card until the next track. */
@@ -2185,7 +2208,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (track != null) addSettingsMenuRow(rows, popup, getString(R.string.discover_open_in, track.app), () -> nowPlaying.open(this));
         addSettingsMenuRow(rows, popup, getString(R.string.now_playing_dismiss), () -> {
             if (track != null) nowPlayingDismissed = track.key();
-            hideNowPlaying();
+            closeNowPlaying(true);
+            btnMusic.setVisibility(View.GONE);
+            equalizer.stop();
         });
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (220 * density), panel.getMeasuredWidth()));
@@ -2685,10 +2710,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS && nowPlayingShown()) {   // the card sits between the dock and the top bar
-                findViewById(R.id.npPlay).requestFocus();
-                return true;
-            }
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
             target = position - COLUMNS;
         } else {

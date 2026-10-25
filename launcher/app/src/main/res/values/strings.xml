@@ -168,4 +168,5 @@
     <string name="now_playing_play_pause">Play or pause</string>
     <string name="now_playing_next">Next</string>
     <string name="now_playing_dismiss">Dismiss</string>
+    <string name="now_playing">Now playing</string>
 </resources>

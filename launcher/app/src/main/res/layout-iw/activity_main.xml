@@ -385,6 +385,14 @@
                     android:drawableStart="@drawable/ic_search"
                     android:nextFocusDown="@+id/grid" />
 
+                <!-- Now playing (config now_playing): bars that move while music plays; OK opens its card. -->
+                <TextView
+                    android:id="@+id/btnMusic"
+                    style="@style/TopButtonIcon"
+                    android:visibility="gone"
+                    android:contentDescription="@string/now_playing"
+                    android:nextFocusDown="@+id/grid" />
+
             </LinearLayout>
 
         </RelativeLayout>
