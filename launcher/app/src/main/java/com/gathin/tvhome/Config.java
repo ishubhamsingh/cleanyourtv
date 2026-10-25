@@ -250,6 +250,8 @@ final class Config {
     final String gridOrder;
     /** Discover's rows of movies and shows under the dock, and search, from the Discover extension (config.xml, discover). */
     final boolean discover;
+    /** The top bar's card with the media playing in the background, and its controls (config.xml, now_playing). */
+    final boolean nowPlaying;
     static final String GRID_ALPHABETICAL = "alphabetical", GRID_RECENT = "recent", GRID_FREQUENT = "frequent";
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
@@ -265,11 +267,12 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.gridOrder = gridOrder(gridOrder);
         this.discover = discover;
+        this.nowPlaying = nowPlaying;
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.keyFilter = keyFilter;
@@ -443,6 +446,7 @@ final class Config {
         boolean tileMenu = res.getBoolean(R.bool.tile_menu);
         String gridOrder = res.getString(R.string.grid_order).trim();
         boolean discover = res.getBoolean(R.bool.discover);
+        boolean nowPlaying = res.getBoolean(R.bool.now_playing);
         String vpn = res.getString(R.string.vpn_app).trim();
         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
         boolean showStats = res.getBoolean(R.bool.show_stats);
@@ -544,6 +548,7 @@ final class Config {
             tileMenu = bool(json, "tile_menu", tileMenu);
             gridOrder = string(json, "grid_order", gridOrder);
             discover = bool(json, "discover", discover);
+            nowPlaying = bool(json, "now_playing", nowPlaying);
             vpn = string(json, "vpn_app", vpn);
             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
             showStats = bool(json, "show_stats", showStats);
@@ -651,7 +656,7 @@ final class Config {
                 dockBand, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough,
                 consumeVolumeKeys, powerOnHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
-                dateBelowClock, gridOrder, discover);
+                dateBelowClock, gridOrder, discover, nowPlaying);
     }
 
     /**

@@ -22,6 +22,11 @@
   <a href="docs/PRESS.md"><img src="docs/card.jpg" alt="293 TV models · 83 brands · 28 languages · 517 KB launcher. Featured in TechCrunch, TechRadar, Tom's Guide, Mashable, Android Authority, XDA, FlatpanelsHD, It's FOSS, Phandroid, GIGAZINE, Xataka, WinFuture, Frandroid, Macitynet, Techaeris, TechPP and 180 more: 196 articles from 32 countries. Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher." width="800"></a>
 </p>
 
+> **About this fork** ([ishubhamsingh/cleanyourtv](https://github.com/ishubhamsingh/cleanyourtv)): search,
+> trending and *For you* rows on the home screen (the launcher stays offline), a now-playing card for Spotify and
+> other music, a grid sorted by use, and a working remote on Sony BRAVIA Google TVs. Features, setup and guides:
+> **[FORK.md](FORK.md)**. Everything below is upstream's.
+
 **The viral tweet:** [x.com/gathint/status/2111379569030939102](https://x.com/gathint/status/2111379569030939102)
 
 On 17 October 2026 I posted a before and after of my parents' TV, cleaned up by Claude Code over Wi-Fi.

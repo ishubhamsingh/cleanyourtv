@@ -332,6 +332,13 @@
          "discover": true. -->
     <bool name="discover">true</bool>
 
+    <!-- Now playing: a card in the top bar with the media playing in the background (Spotify, YouTube Music...): its
+         art, title and artist, with previous, play/pause and next; OK on the art opens the app. Needs the launcher to
+         be a notification listener, granted once over ADB:
+         cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener
+         It reads only the media sessions, never the notifications. Off by default; a theme can set "now_playing": true. -->
+    <bool name="now_playing">true</bool>
+
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
     <integer name="rows_below_dock">0</integer>

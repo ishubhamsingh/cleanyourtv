@@ -27,6 +27,7 @@ import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.Outline;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.tv.TvContract;
@@ -58,6 +59,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.SoundEffectConstants;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.animation.AnimationUtils;
@@ -181,6 +183,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Shelf shelf;
     private android.database.ContentObserver discoverObserver;
     private View btnSearch;
+    /** Now playing (config now_playing): the top bar's card and what feeds it; null when off. */
+    private NowPlaying nowPlaying;
+    private View nowPlayingCard;
     /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
     private int shelfReturnColumn;
     /** The row a poster was focused in, to go back to it after an app; -1 when focus is on the tiles. */
@@ -717,6 +722,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         btnInputs = findViewById(R.id.btnInputs);
         btnSearch = findViewById(R.id.btnSearch);
+        nowPlayingCard = findViewById(R.id.nowPlaying);
+        if (cfg.nowPlaying) setUpNowPlaying();
         if (discoverOn) {
             btnSearch.setVisibility(View.VISIBLE);
             btnSearch.setOnClickListener(v -> open(new Intent(this, SearchActivity.class)));
@@ -817,7 +824,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnLibraryTop.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnSearch, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnSearch, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings,
+                    findViewById(R.id.npInfo), findViewById(R.id.npPrev), findViewById(R.id.npPlay), findViewById(R.id.npNext)));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -941,6 +949,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onStart();
         stopped = false;
         started = true;
+        if (nowPlaying != null) nowPlaying.start();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1191,6 +1200,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onStop() {
         super.onStop();
         started = false;
+        if (nowPlaying != null) nowPlaying.stop();
         unregisterReceiver(timeReceiver);
         handler.removeCallbacks(clockCheck);
         stopped = true;
@@ -2044,6 +2054,69 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             setAmbient(color);
             ambient.animate().alpha(1f).setDuration(500).start();
         }).start();
+    }
+
+    // ---- Now playing -----------------------------------------------------------------------------
+
+    /** The top bar's card for the media playing in the background: art, title, artist and the controls. */
+    private void setUpNowPlaying() {
+        nowPlaying = new NowPlaying(this, this::showTrack);
+        ImageView art = findViewById(R.id.npArt);
+        art.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 6 * density);
+            }
+        });
+        art.setClipToOutline(true);
+        findViewById(R.id.npInfo).setOnClickListener(v -> nowPlaying.open(this));
+        findViewById(R.id.npPrev).setOnClickListener(v -> nowPlaying.previous());
+        findViewById(R.id.npPlay).setOnClickListener(v -> nowPlaying.playPause());
+        findViewById(R.id.npNext).setOnClickListener(v -> nowPlaying.next());
+        // Its own line under the pills: Up to the pills, Down back to the dock, and no wrap past its ends.
+        boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
+        View.OnKeyListener keys = (v, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                firstTopButton().requestFocus();
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                return true;
+            }
+            int left = rtl ? R.id.npNext : R.id.npInfo, right = rtl ? R.id.npInfo : R.id.npNext;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == left;
+            return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == right;
+        };
+        for (int id : new int[]{R.id.npInfo, R.id.npPrev, R.id.npPlay, R.id.npNext}) findViewById(id).setOnKeyListener(keys);
+    }
+
+    private void showTrack(NowPlaying.Track track) {
+        if (track == null) {
+            // Focus on the card would be lost with it: hand it to the next pill first.
+            if (nowPlayingCard.hasFocus()) firstTopButton().requestFocus();
+            nowPlayingCard.setVisibility(View.GONE);
+            return;
+        }
+        ((TextView) findViewById(R.id.npTitle)).setText(track.title);
+        TextView artist = findViewById(R.id.npArtist);
+        artist.setText(track.artist);
+        artist.setVisibility(track.artist.isEmpty() ? View.GONE : View.VISIBLE);
+        ImageView art = findViewById(R.id.npArt);
+        if (track.art != null) art.setImageBitmap(track.art);
+        else art.setImageDrawable(appIcon(track.pkg));
+        ((TextView) findViewById(R.id.npPlay)).setCompoundDrawablesRelativeWithIntrinsicBounds(
+                track.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
+        nowPlayingCard.setVisibility(View.VISIBLE);
+    }
+
+    private Drawable appIcon(String pkg) {
+        try {
+            return getPackageManager().getApplicationIcon(pkg);
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
     }
 
     // ---- Discover --------------------------------------------------------------------------------

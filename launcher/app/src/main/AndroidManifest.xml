@@ -137,6 +137,18 @@
         <!-- Remote Settings button panel (settings_key_panel); own task so the app behind stays put.
              No screenOrientation: a translucent activity may not request one on Android 8.0 (API 26),
              which throws IllegalStateException in onCreate (#1122); a TV is landscape anyway. -->
+        <!-- Now playing (config now_playing): only so Android lists the media sessions to the launcher; it reads no
+             notifications. Off until granted over ADB (cmd notification allow_listener ...NowPlayingListener). -->
+        <service
+            android:name=".NowPlayingListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Discover search: movies and shows from the extension, and the TV's own apps. -->
         <activity
             android:name=".SearchActivity"

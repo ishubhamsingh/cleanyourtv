@@ -163,4 +163,8 @@
     <string name="discover_hidden">You won’t see “%1$s” again</string>
     <string name="discover_not_on_apps">Not on your apps</string>
     <string name="discover_streams_on">Streams on %1$s, which isn’t installed</string>
+    <!-- Now playing (config now_playing): the media playing in the background, in the top bar. -->
+    <string name="now_playing_previous">Previous</string>
+    <string name="now_playing_play_pause">Play or pause</string>
+    <string name="now_playing_next">Next</string>
 </resources>

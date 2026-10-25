@@ -159,4 +159,8 @@
     <string name="discover_hidden">„%1$s” לא יוצג שוב</string>
     <string name="discover_not_on_apps">לא זמין באפליקציות שלך</string>
     <string name="discover_streams_on">זמין ב-%1$s, שאינה מותקנת</string>
+    <!-- Now playing -->
+    <string name="now_playing_previous">הקודם</string>
+    <string name="now_playing_play_pause">הפעלה או השהיה</string>
+    <string name="now_playing_next">הבא</string>
 </resources>
