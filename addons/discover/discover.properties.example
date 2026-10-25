@@ -7,3 +7,7 @@ language=en-IN
 # Optional, free (api.watchmode.com): OK on a title opens that title in its app instead of the app's home.
 # Asked only when a title is opened (two requests the first time, then remembered for 30 days).
 watchmode_key=
+# Optional: your TMDB account, so More like this (Favourites) and Not interested (rated 2/10) are kept there
+# and read back after a reinstall. Made once with an approval link; see the README. Treat it like a password.
+tmdb_session=
+tmdb_account=

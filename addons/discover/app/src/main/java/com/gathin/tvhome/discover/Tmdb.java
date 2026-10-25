@@ -62,6 +62,39 @@ final class Tmdb {
         }
     }
 
+    /**
+     * A write to the owner's TMDB account (favourite, rating), with the session from the one-time approval. Answers
+     * TMDB's JSON; a failure is an IOException the caller keeps for a retry.
+     */
+    JSONObject post(String path, JSONObject body) throws IOException {
+        if (!configured()) throw new IOException("no TMDB key");
+        boolean bearer = key.startsWith("eyJ");
+        String url = API + path + (path.contains("?") ? "&" : "?") + (bearer ? "" : "api_key=" + enc(key));
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(10000);
+        c.setRequestMethod("POST");
+        c.setDoOutput(true);
+        c.setRequestProperty("Content-Type", "application/json;charset=utf-8");
+        c.setRequestProperty("Accept", "application/json");
+        if (bearer) c.setRequestProperty("Authorization", "Bearer " + key);
+        try {
+            try (java.io.OutputStream out = c.getOutputStream()) {
+                out.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            int code = c.getResponseCode();
+            if (code == 401) throw new IOException("TMDB refused the account session");
+            if (code != 200 && code != 201) throw new IOException("TMDB returned HTTP " + code);
+            try (InputStream in = c.getInputStream()) {
+                return new JSONObject(read(in));
+            } catch (JSONException e) {
+                throw new IOException("TMDB sent something that isn't JSON");
+            }
+        } finally {
+            c.disconnect();
+        }
+    }
+
     /** Downloads one image (size "w780", path "/abc.jpg") to a file, through a .part file so a cut leaves nothing. */
     static void download(String size, String path, File to) throws IOException {
         File part = new File(to.getPath() + ".part");

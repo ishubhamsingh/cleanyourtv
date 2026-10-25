@@ -22,6 +22,9 @@ android {
         buildConfigField 'String', 'REGION', "\"${prop('region', 'IN')}\""
         buildConfigField 'String', 'LANGUAGE', "\"${prop('language', 'en-IN')}\""
         buildConfigField 'String', 'WATCHMODE_KEY', "\"${prop('watchmode_key', '')}\""
+        // Optional: your TMDB account (one-time approval), so likes and Not interested are kept there too.
+        buildConfigField 'String', 'TMDB_SESSION', "\"${prop('tmdb_session', '')}\""
+        buildConfigField 'String', 'TMDB_ACCOUNT', "\"${prop('tmdb_account', '')}\""
     }
 
     buildFeatures {

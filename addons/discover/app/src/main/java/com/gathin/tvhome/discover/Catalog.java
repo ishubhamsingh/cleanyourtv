@@ -42,7 +42,7 @@ final class Catalog {
     private static final long WHERE_MS = 3 * 24 * 3600_000L, IDS_MS = 7 * 24 * 3600_000L;
     private static final int ROW_MAX = 20;
     /** Bump when what is saved for the rows changes: the saved rows are thrown away and built again. */
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
     private static final Pattern IMAGE_PATH = Pattern.compile("/[A-Za-z0-9_\\-]+\\.(jpg|png)");
     static final List<String> SIZES = Arrays.asList("w300", "w780", "w1280");
 
@@ -72,6 +72,7 @@ final class Catalog {
     private final Changed changed;
     private final Tmdb tmdb = new Tmdb(BuildConfig.TMDB_KEY, BuildConfig.REGION, BuildConfig.LANGUAGE);
     private final Watchmode watchmode = new Watchmode(BuildConfig.WATCHMODE_KEY, BuildConfig.REGION);
+    private final Account account = new Account(BuildConfig.TMDB_SESSION, BuildConfig.TMDB_ACCOUNT);
     /** After a Watchmode failure (network, quota), no lookups until then. */
     private volatile long watchmodeRetryAt;
     private static final long LINK_MS = 30L * 24 * 3600_000L, NO_LINK_MS = 7L * 24 * 3600_000L;
@@ -158,16 +159,19 @@ final class Catalog {
         List<App> services = distinct(ids.values());
         if (services.isEmpty()) throw new IOException("none of the TV's apps stream anything TMDB lists here");
         loadGenres();
+        syncAccount();
+        fillSeeds();
+        long now = System.currentTimeMillis();
+        Taste.Profile taste = Taste.profile(seeds(), now);
         Set<String> hidden = hidden();
         Set<String> seen = new HashSet<>(hidden);
         List<Row> out = new ArrayList<>();
 
-        // 1. For you: recommendations from what was opened and liked. Before there is anything, the most used app.
-        List<Taste.Seed> seeds = Taste.asked(seeds(), hidden, System.currentTimeMillis());
+        // 1. For you: TMDB's recommendations for what was opened and liked.
+        List<Taste.Seed> seeds = Taste.asked(seeds(), hidden, now);
         if (!seeds.isEmpty()) {
             Map<String, List<Title>> lists = new LinkedHashMap<>();
             Map<String, Double> scores = new HashMap<>();
-            long now = System.currentTimeMillis();
             for (Taste.Seed s : seeds) {
                 scores.put(s.key, Taste.score(s, now));
                 try {
@@ -176,7 +180,7 @@ final class Catalog {
                     Log.w(TAG, "recommendations: " + e.getMessage());
                 }
             }
-            addRow(out, seen, "for_you", "For you", available(Taste.rank(lists, scores, hidden), 40));
+            addRow(out, seen, taste, "for_you", "For you", available(Taste.rank(lists, scores, hidden), 50));
         }
 
         // 2. Trending this week, on the TV's apps.
@@ -185,31 +189,36 @@ final class Catalog {
             movies.addAll(list(tmdb.get("/trending/movie/week?page=" + page), "movie"));
             shows.addAll(list(tmdb.get("/trending/tv/week?page=" + page), "tv"));
         }
-        addRow(out, seen, "trending", "Trending on your apps", available(alternate(movies, shows), 60));
+        addRow(out, seen, taste, "trending", "Trending on your apps", available(alternate(movies, shows), 60));
 
-        // 3. Popular on the most used app (the launcher reports which apps are opened most).
-        String top = topService();
-        App topApp = services.get(0);
-        for (App a : services) if (a.pkg.equals(top)) topApp = a;
-        // Every TMDB id of that app's service ("Netflix" and "Netflix Standard with Ads").
-        StringBuilder topIds = new StringBuilder();
-        for (Map.Entry<Integer, App> e : ids.entrySet()) {
-            if (e.getValue().pkg.equals(topApp.pkg)) topIds.append(topIds.length() == 0 ? "" : "%7C").append(e.getKey());
-        }
-        if (topIds.length() > 0) {
-            String common = "&watch_region=" + tmdb.region + "&with_watch_providers=" + topIds
-                    + "&with_watch_monetization_types=flatrate%7Cfree%7Cads&sort_by=popularity.desc&include_adult=false";
-            List<Title> m = list(tmdb.get("/discover/movie?vote_count.gte=50" + common), "movie");
-            List<Title> t = list(tmdb.get("/discover/tv?vote_count.gte=30" + common), "tv");
-            List<Title> both = alternate(m, t);
-            for (Title x : both) {
-                x.pkg = topApp.pkg;
-                x.app = topApp.label;
-                describe(x);
+        // 3. Top on your apps: the most popular titles of each streaming app on the TV, one app after another (the
+        //    most used first), so every app gets its turn.
+        List<App> byUse = new ArrayList<>(services);
+        Map<String, Double> usage = usage();
+        byUse.sort((a, b) -> Double.compare(usage.getOrDefault(b.pkg, 0d), usage.getOrDefault(a.pkg, 0d)));
+        List<List<Title>> perApp = new ArrayList<>();
+        for (App app : byUse.subList(0, Math.min(byUse.size(), 8))) {
+            // Every TMDB id of that app's service ("Netflix" and "Netflix Standard with Ads").
+            StringBuilder appIds = new StringBuilder();
+            for (Map.Entry<Integer, App> e : ids.entrySet()) {
+                if (e.getValue().pkg.equals(app.pkg)) appIds.append(appIds.length() == 0 ? "" : "%7C").append(e.getKey());
             }
-            String title = seeds.isEmpty() ? "Popular on " + topApp.label : "Top on " + topApp.label;
-            addRow(out, seen, "top_app", title, both);
+            String common = "&watch_region=" + tmdb.region + "&with_watch_providers=" + appIds
+                    + "&with_watch_monetization_types=flatrate%7Cfree%7Cads&sort_by=popularity.desc&include_adult=false";
+            try {
+                List<Title> both = alternate(list(tmdb.get("/discover/movie?vote_count.gte=50" + common), "movie"),
+                        list(tmdb.get("/discover/tv?vote_count.gte=30" + common), "tv"));
+                for (Title x : both) {
+                    x.pkg = app.pkg;
+                    x.app = app.label;
+                    describe(x);
+                }
+                perApp.add(both);
+            } catch (IOException e) {
+                Log.w(TAG, "top on " + app.label + ": " + e.getMessage());
+            }
         }
+        addRow(out, seen, taste, "top_apps", "Top on your apps", Mix.roundRobin(perApp));
 
         // 4. New on the TV's apps: films from the last four months, shows with an episode in the last two.
         if (!ids.isEmpty()) {
@@ -221,19 +230,155 @@ final class Catalog {
                     + "&primary_release_date.lte=" + day(0) + common), "movie");
             List<Title> t = list(tmdb.get("/discover/tv?vote_count.gte=5&air_date.gte=" + day(-60)
                     + "&air_date.lte=" + day(0) + common), "tv");
-            addRow(out, seen, "new", "New on your apps", available(alternate(m, t), 40));
+            addRow(out, seen, taste, "new", "New on your apps", available(alternate(m, t), 50));
         }
         saveWhere();
         return out;
     }
 
-    private static void addRow(List<Row> out, Set<String> seen, String id, String title, List<Title> items) {
-        List<Title> keep = new ArrayList<>();
+    /**
+     * A row from candidates in their source's order: only titles on an app on the TV, with artwork, not already in an
+     * earlier row; re-ordered by taste, apps mixed (Mix), then the first ROW_MAX. Rows under 3 titles are left out.
+     */
+    private static void addRow(List<Row> out, Set<String> seen, Taste.Profile taste, String id, String title,
+                               List<Title> items) {
+        List<Title> ok = new ArrayList<>();
+        Set<String> keys = new HashSet<>();
         for (Title t : items) {
-            if (keep.size() >= ROW_MAX) break;
-            if (t.pkg != null && !t.backdrop.isEmpty() && seen.add(t.key())) keep.add(t);
+            if (t.pkg != null && !t.backdrop.isEmpty() && !seen.contains(t.key()) && keys.add(t.key())) ok.add(t);
         }
+        List<Title> mixed = Mix.balance(Mix.byTaste(ok, taste), ROW_MAX);
+        List<Title> keep = new ArrayList<>(mixed.subList(0, Math.min(ROW_MAX, mixed.size())));
+        for (Title t : keep) seen.add(t.key());
         if (keep.size() >= 3) out.add(new Row(id, title, keep));
+    }
+
+    // MARK: - TMDB account
+
+    /**
+     * Sends what is waiting (likes as Favourites, Not interested as LOW_RATING), then reads the account's Favourites
+     * and ratings back: a title not taught on this TV yet becomes a seed (and a low rating hides it), so the taste
+     * survives a reinstall and follows ratings made on themoviedb.org. Each title is read back once.
+     */
+    private void syncAccount() {
+        if (!account.configured()) return;
+        flushPushes();
+        String q = "?session_id=" + Tmdb.enc(account.session) + "&sort_by=created_at.desc&page=";
+        List<Taste.Seed> seeds = seeds();
+        Set<String> hidden = new HashSet<>(hidden());
+        Set<String> pulled = new HashSet<>(prefs.getStringSet("pulled", Collections.emptySet()));
+        long now = System.currentTimeMillis();
+        boolean changed = false;
+        try {
+            for (String kind : new String[]{"movie", "tv"}) {
+                String plural = kind.equals("movie") ? "movies" : "tv";
+                for (String list : new String[]{"favorite", "rated"}) {
+                    for (int page = 1; page <= 3; page++) {
+                        JSONObject o = tmdb.get("/account/" + account.id + "/" + list + "/" + plural + q + page);
+                        JSONArray results = o.optJSONArray("results");
+                        for (int i = 0; results != null && i < results.length(); i++) {
+                            JSONObject r = results.optJSONObject(i);
+                            Title t = r == null ? null : Title.from(r, kind);
+                            if (t == null) continue;
+                            String tag = list + ":" + t.key();
+                            if (!pulled.add(tag)) continue;
+                            double weight = list.equals("favorite") ? Taste.LIKE : Account.weightForRating(r.optDouble("rating"));
+                            if (list.equals("rated") && Account.hiddenForRating(r.optDouble("rating"))) hidden.add(t.key());
+                            boolean known = false;
+                            for (Taste.Seed x : seeds) known |= x.key.equals(t.key());
+                            if (known || weight == 0) continue;
+                            Taste.Seed seed = new Taste.Seed();
+                            seed.key = t.key();
+                            seed.kind = kind;
+                            seed.id = t.id;
+                            seed.title = t.title;
+                            seed.genres = new ArrayList<>(t.genreIds);
+                            seed.lang = t.lang;
+                            seeds = Taste.add(seeds, seed, weight, now);
+                            changed = true;
+                        }
+                        if (page >= o.optInt("total_pages", 1)) break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "account: " + e.getMessage());
+        }
+        SharedPreferences.Editor e = prefs.edit().putStringSet("pulled", pulled).putStringSet("hidden", hidden);
+        if (changed) e.putString("seeds", Taste.toJson(seeds).toString());
+        e.apply();
+    }
+
+    /** Queues a write to the account and tries it now, off the caller's thread. */
+    private void push(String op, String key) {
+        if (!account.configured()) return;
+        synchronized (this) {
+            JSONArray q = pushes();
+            try {
+                q.put(new JSONObject().put("op", op).put("key", key));
+            } catch (org.json.JSONException ignored) {
+            }
+            prefs.edit().putString("pushes", q.toString()).apply();
+        }
+        lookups.execute(this::flushPushes);
+    }
+
+    private JSONArray pushes() {
+        try {
+            return new JSONArray(prefs.getString("pushes", "[]"));
+        } catch (org.json.JSONException e) {
+            return new JSONArray();
+        }
+    }
+
+    /** Sends the queued writes in order; what fails (offline) stays queued for the next try. */
+    private synchronized void flushPushes() {
+        JSONArray q = pushes(), left = new JSONArray();
+        Set<String> pulled = new HashSet<>(prefs.getStringSet("pulled", Collections.emptySet()));
+        for (int i = 0; i < q.length(); i++) {
+            JSONObject p = q.optJSONObject(i);
+            String key = p == null ? "" : p.optString("key");
+            int colon = key.indexOf(':');
+            if (colon <= 0) continue;
+            String kind = key.substring(0, colon), id = key.substring(colon + 1);
+            String session = "?session_id=" + Tmdb.enc(account.session);
+            try {
+                if ("fav".equals(p.optString("op"))) {
+                    tmdb.post("/account/" + account.id + "/favorite" + session, new JSONObject()
+                            .put("media_type", kind).put("media_id", Integer.parseInt(id)).put("favorite", true));
+                    pulled.add("favorite:" + key);   // ours: not read back as new
+                } else {
+                    tmdb.post("/" + kind + "/" + id + "/rating" + session, new JSONObject().put("value", Account.LOW_RATING));
+                    pulled.add("rated:" + key);
+                }
+            } catch (IOException | org.json.JSONException | NumberFormatException e) {
+                Log.w(TAG, "account push: " + e.getMessage());
+                left.put(p);
+            }
+        }
+        prefs.edit().putString("pushes", left.toString()).putStringSet("pulled", pulled).apply();
+    }
+
+    /** Genres and language for seeds that don't have them yet (a few per build). */
+    private void fillSeeds() {
+        List<Taste.Seed> seeds = seeds();
+        int asked = 0;
+        boolean changed = false;
+        for (Taste.Seed s : seeds) {
+            if (s.genres != null || asked >= 6) continue;
+            asked++;
+            try {
+                JSONObject o = tmdb.get("/" + s.kind + "/" + s.id);
+                s.genres = new ArrayList<>();
+                JSONArray g = o.optJSONArray("genres");
+                for (int i = 0; g != null && i < g.length(); i++) s.genres.add(g.optJSONObject(i).optInt("id"));
+                s.lang = o.optString("original_language");
+                changed = true;
+            } catch (IOException e) {
+                Log.w(TAG, "seed details: " + e.getMessage());
+            }
+        }
+        if (changed) prefs.edit().putString("seeds", Taste.toJson(seeds).toString()).apply();
     }
 
     private static List<Title> alternate(List<Title> a, List<Title> b) {
@@ -252,7 +397,10 @@ final class Catalog {
             JSONObject o = results.optJSONObject(i);
             if (o == null || o.optBoolean("adult")) continue;
             Title t = Title.from(o, kind);
-            if (t != null) out.add(t);
+            if (t != null) {
+                out.add(t);
+                remember(t);
+            }
         }
         return out;
     }
@@ -428,7 +576,10 @@ final class Catalog {
                 continue;
             }
             Title t = Title.from(o, null);
-            if (t != null && keys.add(t.key())) found.add(t);
+            if (t != null && keys.add(t.key())) {
+                found.add(t);
+                remember(t);
+            }
         }
         Set<String> hidden = hidden();
         found.removeIf(t -> hidden.contains(t.key()));
@@ -438,6 +589,14 @@ final class Catalog {
         for (Title t : found) if (t.pkg != null) out.add(t);
         for (Title t : found) if (t.pkg == null) out.add(t);
         return out;
+    }
+
+    /** Titles seen in lists and search, by key, so an open or a like learns their genres without a request. */
+    private final Map<String, Title> known = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private void remember(Title t) {
+        if (known.size() > 3000) known.clear();
+        known.put(t.key(), t);
     }
 
     // MARK: - Opening a title
@@ -493,11 +652,14 @@ final class Catalog {
 
     void liked(String key, String title) {
         learn(key, title, Taste.LIKE);
+        push("fav", key);
         dirty = true;
         rebuild();
     }
 
     void hide(String key) {
+        learn(key, null, Taste.DISLIKE);
+        push("rate", key);
         Set<String> hidden = new HashSet<>(hidden());
         hidden.add(key);
         prefs.edit().putStringSet("hidden", hidden).apply();
@@ -532,6 +694,12 @@ final class Catalog {
             return;
         }
         s.title = title == null ? "" : title;
+        Title t = known.get(key);
+        if (t != null) {
+            s.genres = new ArrayList<>(t.genreIds);
+            s.lang = t.lang;
+            if (s.title.isEmpty()) s.title = t.title;
+        }
         List<Taste.Seed> seeds = Taste.add(seeds(), s, weight, System.currentTimeMillis());
         prefs.edit().putString("seeds", Taste.toJson(seeds).toString()).apply();
         // A new seed changes For you, but there's no hurry: it is picked up at the next stale rebuild or like.

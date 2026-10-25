@@ -79,4 +79,46 @@ public class TasteTest {
         assertFalse(keys.contains("tv:40"));
         assertTrue(keys.contains("movie:10"));
     }
+
+    private static Taste.Seed seed(String key, double weight, String lang, Integer... genres) {
+        Taste.Seed s = seed(key);
+        s.weight = weight;
+        s.at = 0;
+        s.lang = lang;
+        s.genres = new ArrayList<>(Arrays.asList(genres));
+        return s;
+    }
+
+    @Test
+    public void likedGenresAndLanguagesScoreHighAndDislikesLow() {
+        List<Taste.Seed> seeds = Arrays.asList(
+                seed("movie:1", Taste.LIKE, "hi", 80, 53),     // a liked Hindi crime thriller
+                seed("tv:2", Taste.OPEN, "hi", 80),
+                seed("movie:3", Taste.DISLIKE, "en", 10751)); // family, not interested
+        Taste.Profile p = Taste.profile(seeds, 0);
+        Title hindiCrime = title("movie", 10);
+        hindiCrime.lang = "hi";
+        hindiCrime.genreIds.add(80);
+        Title family = title("movie", 11);
+        family.lang = "en";
+        family.genreIds.add(10751);
+        assertTrue(p.affinity(hindiCrime) > 0.8);
+        assertTrue(p.affinity(family) < 0);
+    }
+
+    @Test
+    public void dislikesAreNeverAskedForRecommendations() {
+        List<Taste.Seed> seeds = Arrays.asList(seed("movie:1", Taste.DISLIKE, "en", 18), seed("movie:2", Taste.OPEN, "en", 18));
+        List<Taste.Seed> asked = Taste.asked(seeds, new HashSet<>(), 0);
+        assertEquals(1, asked.size());
+        assertEquals("movie:2", asked.get(0).key);
+    }
+
+    @Test
+    public void seedsKeepTheirGenresWhenOpenedAgainWithoutThem() {
+        List<Taste.Seed> seeds = Taste.add(new ArrayList<>(), seed("movie:1", 0, "hi", 80), Taste.OPEN, 0);
+        seeds = Taste.add(seeds, seed("movie:1"), Taste.OPEN, 0);
+        assertEquals(Arrays.asList(80), seeds.get(0).genres);
+        assertEquals("hi", seeds.get(0).lang);
+    }
 }

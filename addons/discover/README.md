@@ -18,6 +18,14 @@ the launcher through a content provider. The launcher draws everything (its `dis
 - **For you** learns from what you open, like and hide, on the TV only. Opens count for three weeks or so, likes
   three times as much; a hidden title never comes back.
 
+- **Every app gets its turn:** each row keeps at most two posters of one app in a row and no app above about 40 %
+  of it, and *Top on your apps* takes the most popular titles of each of your streaming apps in turn. Titles that
+  match your taste (the genres and original languages of what you opened and liked, minus what you marked Not
+  interested) move up in every row.
+- **Your TMDB account (optional):** with `tmdb_session` and `tmdb_account` set, *More like this* adds the title to
+  your TMDB Favourites and *Not interested* rates it 2/10. Every rebuild reads your Favourites and ratings back, so a
+  reinstall or another TV keeps your taste, and ratings made on themoviedb.org count too.
+
 It cannot show Google TV's *Continue watching*: the apps share that with Google's own home screen only.
 
 ## Permissions
@@ -25,6 +33,7 @@ It cannot show Google TV's *Continue watching*: the apps share that with Google'
 | Permission | Why |
 |---|---|
 | `INTERNET` | TMDB: trending, new releases, recommendations, search, where-to-watch and the artwork. |
+| `INTERNET` (optional) | Your TMDB account, only with `tmdb_session`: adds Favourites and ratings, reads them back. |
 | `INTERNET` (optional) | Watchmode, only with a `watchmode_key`: a title's address on its app, when it is opened. |
 | `com.gathin.tvhome.permission.DISCOVER` (declares it) | Signature level: only the launcher built with the same signing key can read the provider. |
 

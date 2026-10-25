@@ -11,6 +11,8 @@ final class Title {
     String kind;            // "movie" or "tv"
     int id;
     String title = "", overview = "", year = "", backdrop = "", poster = "";
+    /** Original language, ISO 639-1 ("hi", "en", "ko", "ja"), for the taste profile. */
+    String lang = "";
     double rating, popularity;
     List<Integer> genreIds = new ArrayList<>();
     /** The installed app that plays it (package and label), or null when none of the TV's apps has it. */
@@ -38,6 +40,7 @@ final class Title {
         t.poster = path(o.optString("poster_path"));
         t.rating = o.optDouble("vote_average", 0);
         t.popularity = o.optDouble("popularity", 0);
+        t.lang = o.optString("original_language");
         JSONArray g = o.optJSONArray("genre_ids");
         for (int i = 0; g != null && i < g.length(); i++) t.genreIds.add(g.optInt(i));
         if (t.id == 0 || t.title.isEmpty()) return null;
@@ -56,7 +59,7 @@ final class Title {
             for (String s : elsewhere) e.put(s);
             return new JSONObject().put("kind", kind).put("id", id).put("title", title).put("overview", overview)
                     .put("year", year).put("backdrop", backdrop).put("poster", poster).put("rating", rating)
-                    .put("popularity", popularity).put("genres", g).put("pkg", pkg == null ? "" : pkg)
+                    .put("popularity", popularity).put("lang", lang).put("genres", g).put("pkg", pkg == null ? "" : pkg)
                     .put("app", app == null ? "" : app).put("elsewhere", e).put("meta", meta);
         } catch (org.json.JSONException ex) {
             throw new IllegalStateException(ex);
@@ -74,6 +77,7 @@ final class Title {
         t.poster = o.optString("poster");
         t.rating = o.optDouble("rating", 0);
         t.popularity = o.optDouble("popularity", 0);
+        t.lang = o.optString("lang");
         JSONArray g = o.optJSONArray("genres");
         for (int i = 0; g != null && i < g.length(); i++) t.genreIds.add(g.optInt(i));
         t.pkg = o.optString("pkg").isEmpty() ? null : o.optString("pkg");
