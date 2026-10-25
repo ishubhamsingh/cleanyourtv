@@ -171,6 +171,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView greeting;
     private View clockBlock;
     private View btnInputs;
+    /** Discover (config discover): the rows under the dock and the search pill, when the extension is there. */
+    private boolean discoverOn;
+    private Discover discover;
+    private Shelf shelf;
+    private android.database.ContentObserver discoverObserver;
+    private View btnSearch;
+    /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
+    private int shelfReturnColumn;
+    /** The row a poster was focused in, to go back to it after an app; -1 when focus is on the tiles. */
+    private int shelfFocusRow = -1;
+    /** Rows that arrived while a poster had focus: applied once focus is back on the tiles. */
+    private List<Discover.Row> pendingShelfRows;
     /** config show_inputs_pill: false keeps the Inputs pill hidden even when the TV has inputs. */
     private boolean showInputsPill = true;
     private TextView btnWifi;
@@ -538,6 +550,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     return true;
                 }
                 if (dockRow && getPosition(child) < COLUMNS) return false;
+                // The Discover rows place themselves (onPosterFocused), like the dock.
+                if (adapter != null && adapter.isShelfAt(getPosition(child))) return false;
                 int top = child.getTop() + rect.top;
                 int bottom = top + rect.height();
                 // A row already fully on screen stays put, even inside the bottom padding (the last row
@@ -555,7 +569,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         });
         ((GridLayoutManager) grid.getLayoutManager()).setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override public int getSpanSize(int position) { return !singleRow && adapter != null && adapter.isLibraryAt(position) ? COLUMNS : 1; }
+            @Override public int getSpanSize(int position) {
+                if (singleRow || adapter == null) return 1;
+                return adapter.isLibraryAt(position) ? COLUMNS : adapter.spanAt(position, COLUMNS);
+            }
         });
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
@@ -580,6 +597,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         }
         adapter = new AppAdapter(this, this, COLUMNS, cfg);
+        discoverOn = cfg.discover && dockRow && !singleRow && Discover.get(this).available();
+        if (discoverOn) {
+            discover = Discover.get(this);
+            shelf = new Shelf(this, shelfListener, animations && !reducedMotion);
+            adapter.setShelf(shelf);
+            discoverObserver = discover.watch(this::loadShelf);
+            loadShelf();
+        }
         dockApps = cfg.dockApps;
         fillDockLeavesSlots = !cfg.fillDock;
         Order savedOrder = Order.load(Order.file(this));
@@ -687,6 +712,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
 
         btnInputs = findViewById(R.id.btnInputs);
+        btnSearch = findViewById(R.id.btnSearch);
+        if (discoverOn) {
+            btnSearch.setVisibility(View.VISIBLE);
+            btnSearch.setOnClickListener(v -> open(new Intent(this, SearchActivity.class)));
+        }
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
@@ -768,20 +798,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
+            int firstButton = btnSearch.getVisibility() == View.VISIBLE ? R.id.btnSearch
+                    : btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
         btnInputs.setOnKeyListener(pillKeys);
+        btnSearch.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
-            List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings));
+            List<View> pills = new ArrayList<>(Arrays.asList(btnSearch, btnInputs, btnWifi, btnReorder, btnLibraryTop, btnSettings));
             pills.addAll(topAppButtons);
             for (View button : pills) {
                 button.setOnFocusChangeListener((view, focused) -> view.animate()
@@ -889,6 +921,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (intent == null || !intent.hasCategory(Intent.CATEGORY_HOME)) return;
         grid.scrollToPosition(0);
         lastFocused = 0;
+        shelfFocusRow = -1;
         lastFocusedKey = adapter.getItemCount() > 0 ? adapter.keyAt(0) : null;
         if (stopped) {
             tileRefresh.onHomeAgain();
@@ -931,6 +964,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         restartIdleClock();
         promptsPaused = false;
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
+        if (discoverOn) {
+            discover.reportUsage(adapter.usage());
+            loadShelf();
+        }
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
             case REBUILD:
                 tilesReady = false;
@@ -1106,6 +1143,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.post(() -> {
             int pos = adapter.positionOf(returnKey);
             if (returnToLibrary || libraryFocusPending) focusLibrary();
+            else if (shelfFocusRow >= 0 && adapter.gridStart() > 0 && shelfFocusRow < shelf.rowCount()) focusShelfRow(shelfFocusRow);
             else focusTile(pos >= 0 ? pos : returnSlot);
             tilesReady = true;
             startPendingSettingsReorder();
@@ -1173,6 +1211,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.getRecycledViewPool().clear();
         heroArtCache.clear();
         heroArtKey = null;
+        if (discover != null) discover.trim();
         wallpaperPlayer.releaseForMemoryPressure();
         tileRefresh.invalidate();
     }
@@ -1192,6 +1231,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onDestroy();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
+        if (discover != null) discover.stopWatching(discoverObserver);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -1590,6 +1630,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onTileFocused(int position, View card) {
+        shelfFocusRow = -1;
+        if (pendingShelfRows != null) {
+            List<Discover.Row> rows = pendingShelfRows;
+            pendingShelfRows = null;
+            card.post(() -> applyShelf(rows));
+        }
         lastFocused = position;
         lastFocusedKey = adapter.keyAt(position);
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
@@ -1691,17 +1737,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showHero(int position, float dockTopInRoot) {
         String label = adapter.labelAt(position);
-        int color = adapter.ambientColorAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
-        boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic && heroArtAlpha > 0f) showHeroArt(position);
+        presentHero(label, adapter.ambientColorAt(position), dockTopInRoot - 14 * density - 26 * density - hero.getHeight(),
+                () -> fillHero(position, label));
+    }
+
+    /** Shows the top shelf with this name at y, filled by `fill`: a dock app's, or a Discover title's. */
+    private void presentHero(String label, int color, float y, Runnable fill) {
+        boolean changed = !label.contentEquals(heroName.getText());
 
         if (!animations || reducedMotion) {
             // Snap the shelf instead of sliding and fading it: each of those frames repaints the
             // full-screen panel, and this switch exists for the GPUs that cannot afford it.
             hero.animate().cancel();
             ambient.animate().cancel();
-            fillHero(position, label);
+            fill.run();
             hero.setY(y);
             hero.setTranslationX(0f);
             hero.setAlpha(1f);
@@ -1717,7 +1767,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             stopAmbientAnimation();
             hero.animate().cancel();
             ambient.animate().cancel();
-            fillHero(position, label);
+            fill.run();
             hero.setY(y);
             hero.setTranslationX(0f);
             hero.animate().alpha(1f).setDuration(260).start();
@@ -1729,7 +1779,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } else if (changed) {
             if (advancedEffects) hero.animate().cancel();
             hero.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction(() -> {
-                fillHero(position, label);
+                fill.run();
                 hero.setY(y);
                 hero.setTranslationX(12 * density);
                 hero.animate().alpha(1f).translationX(0f).setDuration(200).start();
@@ -1750,7 +1800,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The shelf's text for this dock app: its name and, on the cinematic shelf, "Last opened" and the dots. */
     private void fillHero(int position, String label) {
         heroName.setText(label);
-        if (!cinematic) return;
+        if (!cinematic) {
+            heroMeta.setVisibility(View.GONE);   // a Discover title may have shown its line
+            return;
+        }
         updateHeroMeta(position);
         updateHeroDots(position);
     }
@@ -1817,11 +1870,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtKey = key;
         final Bitmap next = art;
         if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
+            heroArt.setScaleType(ImageView.ScaleType.FIT_XY);
             heroArt.setImageBitmap(next);
             fadeHeroArt(600);
             return;
         }
         heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
+            heroArt.setScaleType(ImageView.ScaleType.FIT_XY);
             heroArt.setImageBitmap(next);
             heroArt.animate().alpha(heroArtAlpha).setDuration(420).start();
         }).start();
@@ -1983,6 +2038,168 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             setAmbient(color);
             ambient.animate().alpha(1f).setDuration(500).start();
         }).start();
+    }
+
+    // ---- Discover --------------------------------------------------------------------------------
+
+    /** Reads Discover's rows and puts them under the dock; a refresh that changed nothing rebuilds nothing. */
+    private void loadShelf() {
+        if (!discoverOn) return;
+        discover.rows(rows -> {
+            if (isDestroyed() || shelf.same(rows)) return;
+            // Rebuilding the rows under a focused poster would drop the focus: wait until it is back on a tile.
+            View focus = getCurrentFocus();
+            if (focus != null && focus.getId() == R.id.poster) {
+                pendingShelfRows = rows;
+                return;
+            }
+            applyShelf(rows);
+        });
+    }
+
+    private void applyShelf(List<Discover.Row> rows) {
+        if (shelf.same(rows)) return;
+        boolean had = !shelf.isEmpty();
+        shelf.setRows(rows);
+        // Rows appearing or going changes the grid's entries (the block and its spacers): rebuild the tiles.
+        if (had != !rows.isEmpty() || adapter.gridStart() < 0 && !rows.isEmpty()) reloadApps(false);
+    }
+
+    private void focusShelfRow(int row) {
+        cancelPendingFocusScroll();
+        RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(COLUMNS);
+        if (vh != null) {
+            shelf.focusRow(row);
+            return;
+        }
+        // Not laid out (scrolled away): bring the block in first.
+        grid.scrollToPosition(COLUMNS);
+        grid.post(() -> shelf.focusRow(row));
+    }
+
+    private final Shelf.Listener shelfListener = new Shelf.Listener() {
+        @Override
+        public void onPosterFocused(Discover.Item item, View poster, View row) {
+            hideGlass();
+            ViewGroup block = (ViewGroup) row.getParent();
+            shelfFocusRow = block == null ? 0 : block.indexOfChild(row);
+            // Park the focused row where the dock sits, with the title's top shelf above it, like the dock.
+            Rect r = new Rect(0, 0, row.getWidth(), row.getHeight());
+            grid.offsetDescendantRectToMyCoords(row, r);
+            int dy = r.top - grid.getPaddingTop();
+            boolean scroll = Math.abs(dy) > (int) (8 * density);
+            if (scroll) {
+                if (!animations || reducedMotion) grid.scrollBy(0, dy);
+                else grid.smoothScrollBy(0, dy);
+            }
+            Rect inRoot = new Rect(0, 0, row.getWidth(), row.getHeight());
+            root.offsetDescendantRectToMyCoords(row, inRoot);
+            float top = (scroll ? inRoot.top - dy : inRoot.top) + 12 * density;
+            if (cinematic && heroArtAlpha > 0f) showTitleArt(item);
+            int color = ambientColor == -1 ? 0xFF444444 : ambientColor;
+            presentHero(item.title, color, top - 14 * density - 26 * density - hero.getHeight(), () -> fillTitle(item));
+        }
+
+        @Override
+        public void onPosterClicked(Discover.Item item) {
+            openTitle(item);
+        }
+
+        @Override
+        public void onPosterLongPress(Discover.Item item, View poster) {
+            showPosterMenu(item, poster);
+        }
+
+        @Override
+        public void onShelfExit(boolean up) {
+            shelfFocusRow = -1;
+            if (up) {
+                focusTile(Math.min(shelfReturnColumn, Math.max(0, adapter.dockFilled() - 1)));
+            } else {
+                int target = adapter.gridStart() + shelfReturnColumn;
+                if (adapter.gridStart() >= adapter.appCount()) {
+                    if (adapter.isLibraryAt(adapter.appCount())) focusLibrary();
+                    return;
+                }
+                focusTile(Math.min(target, adapter.appCount() - 1));
+            }
+        }
+    };
+
+    /** The top shelf's text for a Discover title: its name and "Series · Crime · 2024 · Netflix". */
+    private void fillTitle(Discover.Item item) {
+        heroName.setText(item.title);
+        heroMeta.setText(item.line());
+        heroMeta.setVisibility(View.VISIBLE);
+        if (cinematic) heroDots.setVisibility(View.INVISIBLE);
+    }
+
+    /** The cinematic shelf's backdrop for a title: TMDB's wide artwork, cropped, and its colour for the glow. */
+    private void showTitleArt(Discover.Item item) {
+        String key = "discover:" + item.key;
+        if (key.equals(heroArtKey)) {
+            fadeHeroArt(420);
+            return;
+        }
+        heroArtKey = key;
+        Uri uri = Discover.image("w1280", item.backdrop);
+        if (uri == null) return;
+        int width = root.getWidth() > 0 ? root.getWidth() / 2 : 960;
+        discover.load(uri, width, bmp -> {
+            if (bmp == null || !key.equals(heroArtKey) || isDestroyed()) return;
+            int color = AppAdapter.vividColor(new BitmapDrawable(getResources(), bmp));
+            if (ambientGlow && heroShown) {
+                if (advancedEffects) transitionAmbient(color);
+                else setAmbient(color);
+            }
+            heroArt.animate().cancel();
+            if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
+                heroArt.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                heroArt.setImageBitmap(bmp);
+                fadeHeroArt(600);
+                return;
+            }
+            heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
+                heroArt.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                heroArt.setImageBitmap(bmp);
+                heroArt.animate().alpha(heroArtAlpha).setDuration(420).start();
+            }).start();
+        });
+    }
+
+    /** Opens a title in its app (Discover.open), or says why it can't. */
+    private void openTitle(Discover.Item item) {
+        if (!item.playable()) {
+            Toast.makeText(this, item.elsewhere.isEmpty() ? getString(R.string.discover_not_on_apps)
+                    : getString(R.string.discover_streams_on, item.elsewhere), Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (discover.open(this, item)) {
+            LastOpened.record(this, item.pkg);
+            Frecency.record(this, item.pkg);
+        } else {
+            Toast.makeText(this, getString(R.string.cant_open, item.app), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Hold OK on a poster: open it, ask for more like it, or never show it again. */
+    private void showPosterMenu(Discover.Item item, View poster) {
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        PopupWindow popup = glassPopup(panel, (int) (240 * density));
+        if (item.playable()) addSettingsMenuRow(rows, popup, getString(R.string.discover_open_in, item.app), () -> openTitle(item));
+        addSettingsMenuRow(rows, popup, getString(item.liked ? R.string.discover_liked : R.string.discover_like), () -> {
+            discover.like(item);
+            Toast.makeText(this, R.string.discover_liked, Toast.LENGTH_SHORT).show();
+        });
+        addSettingsMenuRow(rows, popup, getString(R.string.discover_hide), () -> {
+            discover.hide(item);
+            Toast.makeText(this, getString(R.string.discover_hidden, item.title), Toast.LENGTH_SHORT).show();
+        });
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max((int) (240 * density), panel.getMeasuredWidth()));
+        dropIn(popup, panel, poster, Gravity.START);
+        rows.getChildAt(0).requestFocus();
     }
 
     private void hideHero() {
@@ -2218,6 +2435,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return true;
             }
             return !forward && position == 0;
+        }
+        // Discover's rows sit between the dock and the grid: Down from the dock and Up from the first grid row go
+        // into them (and Shelf.Listener.onShelfExit back out).
+        int gridStart = adapter.gridStart();
+        if (gridStart > 0 && keyCode == KeyEvent.KEYCODE_DPAD_DOWN && position < COLUMNS) {
+            shelfReturnColumn = position;
+            focusShelfRow(0);
+            grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+            return true;
+        }
+        if (gridStart > 0 && keyCode == KeyEvent.KEYCODE_DPAD_UP && position >= gridStart && position < gridStart + COLUMNS) {
+            shelfReturnColumn = position - gridStart;
+            focusShelfRow(shelf.rowCount() - 1);
+            grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+            return true;
         }
         // Horizontal: swallow the key at a row's ends so focus never wraps to the next row or
         // escapes up into the top bar. Mid-row moves fall through to the default focus search.
@@ -3251,6 +3483,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {
+        addSettingsMenuRow(rows, popup, getString(title), action);
+    }
+
+    private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, CharSequence title, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         row.findViewById(R.id.icon).setVisibility(View.GONE);
         row.findViewById(R.id.dot).setVisibility(View.GONE);

@@ -145,4 +145,18 @@
     <string name="race_countdown_hours">%1$d שע׳ %2$d דק׳</string>
     <string name="race_countdown_days">%1$d ימ׳ %2$d שע׳</string>
     <string name="last_opened">פתיחה אחרונה: %1$s</string>
+    <!-- Discover -->
+    <string name="discover_search">חיפוש</string>
+    <string name="discover_search_hint">חיפוש סרטים, סדרות ואפליקציות</string>
+    <string name="discover_apps">אפליקציות</string>
+    <string name="discover_titles">סרטים וסדרות</string>
+    <string name="discover_searching">מחפש…</string>
+    <string name="discover_no_results">לא נמצא דבר עבור „%1$s”</string>
+    <string name="discover_open_in">פתיחה ב-%1$s</string>
+    <string name="discover_like">עוד כאלה</string>
+    <string name="discover_liked">נרשם: עוד כאלה</string>
+    <string name="discover_hide">לא מעוניין</string>
+    <string name="discover_hidden">„%1$s” לא יוצג שוב</string>
+    <string name="discover_not_on_apps">לא זמין באפליקציות שלך</string>
+    <string name="discover_streams_on">זמין ב-%1$s, שאינה מותקנת</string>
 </resources>

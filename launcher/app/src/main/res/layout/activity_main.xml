@@ -322,6 +322,15 @@
                 android:clipToPadding="false"
                 android:orientation="horizontal">
 
+                <!-- Discover search (config discover, with the Discover extension installed); hidden otherwise. -->
+                <TextView
+                    android:id="@+id/btnSearch"
+                    style="@style/TopButtonIcon"
+                    android:visibility="gone"
+                    android:contentDescription="@string/discover_search"
+                    android:drawableStart="@drawable/ic_search"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnInputs"
                     style="@style/TopButton"

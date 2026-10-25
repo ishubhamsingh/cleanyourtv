@@ -149,4 +149,18 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+    <!-- Discover (config discover): rows of movies and shows under the dock, and search. -->
+    <string name="discover_search">Search</string>
+    <string name="discover_search_hint">Search movies, shows and apps</string>
+    <string name="discover_apps">Apps</string>
+    <string name="discover_titles">Movies &amp; shows</string>
+    <string name="discover_searching">Searching…</string>
+    <string name="discover_no_results">Nothing found for “%1$s”</string>
+    <string name="discover_open_in">Open in %1$s</string>
+    <string name="discover_like">More like this</string>
+    <string name="discover_liked">Noted: more like this</string>
+    <string name="discover_hide">Not interested</string>
+    <string name="discover_hidden">You won’t see “%1$s” again</string>
+    <string name="discover_not_on_apps">Not on your apps</string>
+    <string name="discover_streams_on">Streams on %1$s, which isn’t installed</string>
 </resources>

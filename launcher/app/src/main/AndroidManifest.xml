@@ -8,6 +8,13 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Discover (config discover): read the Discover extension's provider. Signature-level, declared here too so
+         either app can be installed first; only the extension built with the same key qualifies. -->
+    <permission
+        android:name="com.gathin.tvhome.permission.DISCOVER"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.gathin.tvhome.permission.DISCOVER" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
          runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
@@ -68,6 +75,11 @@
         <!-- Coocaa OS sources for the Inputs menu (coocaa_sources); see CoocaaSources. -->
         <provider android:authorities="com.skyworth.tv.provider" />
         <provider android:authorities="com.skyworth.tv.sdk.provider" />
+        <!-- Discover: the extension's provider, and the streaming apps' search screens a title opens in. -->
+        <provider android:authorities="com.gathin.tvhome.discover" />
+        <intent>
+            <action android:name="android.intent.action.SEARCH" />
+        </intent>
     </queries>
 
     <application
@@ -124,6 +136,14 @@
         <!-- Remote Settings button panel (settings_key_panel); own task so the app behind stays put.
              No screenOrientation: a translucent activity may not request one on Android 8.0 (API 26),
              which throws IllegalStateException in onCreate (#1122); a TV is landscape anyway. -->
+        <!-- Discover search: movies and shows from the extension, and the TV's own apps. -->
+        <activity
+            android:name=".SearchActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TvHome"
+            android:windowSoftInputMode="stateVisible|adjustNothing"
+            android:screenOrientation="landscape" />
+
         <activity
             android:name=".QuickSettingsActivity"
             android:exported="false"

@@ -1,0 +1,6 @@
+# Copy to discover.properties (git ignores it) and fill in your own free TMDB key:
+# themoviedb.org -> Settings -> API -> "API Read Access Token" (starts with eyJ) or the v3 "API Key".
+tmdb_key=
+# Country for "what streams where" (two letters) and the language of titles and genres.
+region=IN
+language=en-IN

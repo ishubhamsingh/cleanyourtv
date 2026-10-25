@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!-- TMDB: what is trending and new, what streams where in your country, search, and the artwork. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Only an app signed with the same key (the launcher built on the same machine) may read the catalogue.
+         The launcher declares the same permission, so either app can be installed first. -->
+    <permission
+        android:name="com.gathin.tvhome.permission.DISCOVER"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.gathin.tvhome.permission.DISCOVER" />
+
+    <!-- Which streaming apps are on the TV: only titles on those apps are picked (Services). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+    </queries>
+
+    <!-- No activity and no icon: the launcher shows everything. Nothing runs in the background either; the
+         provider starts when the launcher asks it something. -->
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="false">
+
+        <provider
+            android:name=".DiscoverProvider"
+            android:authorities="com.gathin.tvhome.discover"
+            android:exported="true"
+            android:readPermission="com.gathin.tvhome.permission.DISCOVER"
+            android:writePermission="com.gathin.tvhome.permission.DISCOVER" />
+    </application>
+</manifest>

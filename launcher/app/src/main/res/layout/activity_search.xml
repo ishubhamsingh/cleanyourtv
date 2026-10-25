@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Discover search: the field, the focused result's details, then apps and movies & shows. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/search_bg"
+    android:paddingStart="56dp"
+    android:paddingEnd="56dp"
+    android:paddingTop="32dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <EditText
+        android:id="@+id/query"
+        android:layout_width="560dp"
+        android:layout_height="56dp"
+        android:background="@drawable/search_field_bg"
+        android:drawableStart="@drawable/ic_search"
+        android:drawablePadding="12dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:hint="@string/discover_search_hint"
+        android:textColorHint="#80FFFFFF"
+        android:textColor="#FFFFFFFF"
+        android:textSize="18sp"
+        android:fontFamily="@string/font_regular"
+        android:singleLine="true"
+        android:inputType="text"
+        android:imeOptions="actionSearch|flagNoExtractUi"
+        android:nextFocusDown="@+id/results" />
+
+    <!-- The focused result: its name, "Series · Crime · 2024 · Netflix" and the start of its story. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="118dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginStart="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/infoTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="#FFFFFFFF"
+            android:textSize="32sp"
+            android:fontFamily="@string/font_light"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/infoLine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:singleLine="true"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp"
+            android:fontFamily="@string/font_medium" />
+
+        <TextView
+            android:id="@+id/infoOverview"
+            android:layout_width="720dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="#99FFFFFF"
+            android:textSize="13sp"
+            android:fontFamily="@string/font_body"
+            android:lineSpacingExtra="2dp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="40dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <TextView
+                android:id="@+id/appsHeader"
+                style="@style/DiscoverHeader"
+                android:text="@string/discover_apps"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/apps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/titlesHeader"
+                style="@style/DiscoverHeader"
+                android:text="@string/discover_titles"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false" />
+
+            <TextView
+                android:id="@+id/status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="4dp"
+                android:textColor="#99FFFFFF"
+                android:textSize="14sp"
+                android:fontFamily="@string/font_body" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

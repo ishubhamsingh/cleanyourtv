@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Your own TMDB key and country, from discover.properties (git ignores it; see discover.properties.example).
+def discoverProps = new Properties()
+def discoverFile = rootProject.file('discover.properties')
+if (discoverFile.exists()) discoverFile.withInputStream { discoverProps.load(it) }
+def prop = { String name, String fallback -> (discoverProps.getProperty(name) ?: fallback).trim().replace('\\', '\\\\').replace('"', '\\"') }
+
+android {
+    namespace 'com.gathin.tvhome.discover'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.gathin.tvhome.discover'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'TMDB_KEY', "\"${prop('tmdb_key', '')}\""
+        buildConfigField 'String', 'REGION', "\"${prop('region', 'IN')}\""
+        buildConfigField 'String', 'LANGUAGE', "\"${prop('language', 'en-IN')}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            // Signed with the debug key like the launcher: the provider's signature permission lets only the
+            // launcher built on the same machine read it.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    // Android's org.json is a stub in JVM tests: the real one, for parsing TMDB answers in src/test.
+    testImplementation 'org.json:json:20231013'
+}

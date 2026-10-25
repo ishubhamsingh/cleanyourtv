@@ -318,6 +318,12 @@
          grid tiles; the dock keeps its own. Can also be set with "grid_order" in a theme's config.json. -->
     <string name="grid_order" translatable="false">frequent</string>
 
+    <!-- Discover: rows of movies and shows under the dock (For you, Trending on your apps, Popular on the app you use
+         most, New on your apps) and a search pill, from the Discover extension (com.gathin.tvhome.discover), which talks to TMDB
+         so the launcher itself stays offline. Without the extension it shows nothing. Off by default; a theme can set
+         "discover": true. -->
+    <bool name="discover">true</bool>
+
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
     <integer name="rows_below_dock">0</integer>

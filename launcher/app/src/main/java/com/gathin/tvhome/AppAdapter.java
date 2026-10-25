@@ -64,7 +64,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static final class Entry {
-        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, EMPTY = 3;
+        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, EMPTY = 3, SHELF = 4, SPACER = 5;
 
         final int kind;
         final String label;
@@ -192,6 +192,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final String gridOrder;
     /** A launch since the last reload() may have changed a recent / frequent grid order. */
     private boolean usageChanged;
+    /** Discover's rows under the dock (config discover), or null; shown when it has rows. */
+    private Shelf shelf;
+    /** Where the grid starts after the shelf block and its spacers, or -1 without a shelf. */
+    private int gridStart = -1;
     /** Dock order (config.xml dock_apps, or a theme's config.json). */
     private final List<String> favourites;
     /** Grid apps fill the dock slots dock_apps leaves free (config.xml, fill_dock). */
@@ -343,9 +347,50 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
                     null, null, null, 0));
         }
+        // Discover: one full-width block right under the dock, then dockSize - 1 empty spacers, so every app keeps
+        // its column (position % columns) and the grid's row maths stays as it was. Never while tiles are moved.
+        gridStart = -1;
+        if (shelf != null && !shelf.isEmpty() && dockRow && !singleRow && !reordering && fresh.size() >= dockSize) {
+            fresh.add(dockSize, new Entry(Entry.SHELF, "", new ComponentName(ctx, "discover-shelf"), null, null, null, 0));
+            for (int i = 1; i < dockSize; i++) {
+                fresh.add(dockSize + i, new Entry(Entry.SPACER, "", new ComponentName(ctx, "discover-spacer-" + i),
+                        null, null, null, 0));
+            }
+            gridStart = ShelfSlots.gridStart(dockSize);
+        }
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
+    }
+
+    void setShelf(Shelf shelf) {
+        this.shelf = shelf;
+    }
+
+    /** The Discover block's position. */
+    boolean isShelfAt(int position) {
+        return position >= 0 && position < items.size() && items.get(position).kind == Entry.SHELF;
+    }
+
+    boolean isSpacerAt(int position) {
+        return position >= 0 && position < items.size() && items.get(position).kind == Entry.SPACER;
+    }
+
+    /** The first grid position after the Discover block, or -1 when there is none. */
+    int gridStart() {
+        return gridStart;
+    }
+
+    /** Grid spans: the block takes the row; the spacers fill the next row exactly (the last one is two wide). */
+    int spanAt(int position, int columns) {
+        return gridStart < 0 || position < dockSize || position >= gridStart ? 1 : ShelfSlots.span(position, columns);
+    }
+
+    /** How much each app on Home is used (Frecency), for Discover's "Popular on" row. */
+    Map<String, Double> usage() {
+        Map<String, Double> out = new HashMap<>();
+        for (Entry e : items) if (e.kind == Entry.APP) out.put(e.pkg, Frecency.get(ctx, e.pkg));
+        return out;
     }
 
     /** A banner_* drawable bundled with the launcher, or null for none or a name that is not one. */
@@ -390,6 +435,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == 2 || viewType == 3) {
+            float d = parent.getResources().getDisplayMetrics().density;
+            int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
+            int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
+            if (viewType == 3) {
+                View spacer = new View(ctx);
+                spacer.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0));
+                spacer.setFocusable(false);
+                return new RecyclerView.ViewHolder(spacer) { };
+            }
+            int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, d);
+            return new RecyclerView.ViewHolder(shelf.create(parent, w, tileHeightPx(w), inner / dockSize)) { };
+        }
         if (viewType == 1) {
             View row = LayoutInflater.from(ctx).inflate(R.layout.row_app_library, parent, false);
             View button = row.findViewById(R.id.btnLibrary);
@@ -439,7 +497,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (isLibraryAt(position)) return;
+        if (isLibraryAt(position) || isShelfAt(position) || isSpacerAt(position)) return;
         Holder h = (Holder) holder;
         Entry e = items.get(position);
         if (e.kind == Entry.EMPTY) {
@@ -547,7 +605,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     boolean isLibraryAt(int position) { return showLibrary && position == items.size(); }
 
-    @Override public int getItemViewType(int position) { return isLibraryAt(position) ? 1 : 0; }
+    @Override public int getItemViewType(int position) {
+        return isLibraryAt(position) ? 1 : isShelfAt(position) ? 2 : isSpacerAt(position) ? 3 : 0;
+    }
 
     boolean containsPackage(String pkg) {
         for (Entry entry : items) if (entry.pkg.equals(pkg)) return true;
@@ -628,7 +688,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         List<String> keys = new ArrayList<>();
         for (int i = 0; i < movableCount(); i++) {
             Entry e = items.get(i);
-            if (e.kind != Entry.EMPTY) keys.add(e.component.flattenToShortString());
+            if (e.kind != Entry.EMPTY && e.kind != Entry.SHELF && e.kind != Entry.SPACER) keys.add(e.component.flattenToShortString());
         }
         return keys;
     }
@@ -842,7 +902,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return Math.max(0, Math.min(255, Math.round(v)));
     }
 
-    private static int vividColor(Drawable live) {
+    static int vividColor(Drawable live) {
         if (live == null) return 0xFF444444;
         // Draw a private copy: changing the bounds of the drawable an ImageView shows would blank the tile.
         Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;

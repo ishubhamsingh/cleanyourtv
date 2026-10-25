@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Discover: the image URI an ImageView is waiting for (Discover.load), so a late image never lands on a reused view. -->
+    <item name="discoverImage" type="id" />
+</resources>
