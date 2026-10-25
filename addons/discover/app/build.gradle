@@ -21,6 +21,7 @@ android {
         buildConfigField 'String', 'TMDB_KEY', "\"${prop('tmdb_key', '')}\""
         buildConfigField 'String', 'REGION', "\"${prop('region', 'IN')}\""
         buildConfigField 'String', 'LANGUAGE', "\"${prop('language', 'en-IN')}\""
+        buildConfigField 'String', 'WATCHMODE_KEY', "\"${prop('watchmode_key', '')}\""
     }
 
     buildFeatures {

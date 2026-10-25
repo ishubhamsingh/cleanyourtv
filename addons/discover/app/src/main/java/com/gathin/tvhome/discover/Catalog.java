@@ -71,6 +71,10 @@ final class Catalog {
     private final Context ctx;
     private final Changed changed;
     private final Tmdb tmdb = new Tmdb(BuildConfig.TMDB_KEY, BuildConfig.REGION, BuildConfig.LANGUAGE);
+    private final Watchmode watchmode = new Watchmode(BuildConfig.WATCHMODE_KEY, BuildConfig.REGION);
+    /** After a Watchmode failure (network, quota), no lookups until then. */
+    private volatile long watchmodeRetryAt;
+    private static final long LINK_MS = 30L * 24 * 3600_000L, NO_LINK_MS = 7L * 24 * 3600_000L;
     private final SharedPreferences prefs;
     private final ExecutorService builder = Executors.newSingleThreadExecutor();
     /** Where-to-watch lookups and image downloads, a few at a time. */
@@ -434,6 +438,51 @@ final class Catalog {
         for (Title t : found) if (t.pkg != null) out.add(t);
         for (Title t : found) if (t.pkg == null) out.add(t);
         return out;
+    }
+
+    // MARK: - Opening a title
+
+    /**
+     * The title's own address on the app `pkg` (Watchmode), or null: then the launcher opens the app. Asked only when
+     * a title is opened; an answer is kept for 30 days, "none" for 7. Runs on the caller's thread (network).
+     */
+    synchronized String link(String key, String pkg) {
+        if (!watchmode.configured() || key == null || pkg == null) return null;
+        int colon = key.indexOf(':');
+        if (colon <= 0) return null;
+        String kind = key.substring(0, colon);
+        int id;
+        try {
+            id = Integer.parseInt(key.substring(colon + 1));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        String cacheKey = key + "|" + pkg;
+        JSONObject links = json(prefs.getString("links", null));
+        if (links == null) links = new JSONObject();
+        JSONObject cached = links.optJSONObject(cacheKey);
+        long now = System.currentTimeMillis();
+        if (cached != null) {
+            String url = cached.optString("url");
+            if (now - cached.optLong("at") < (url.isEmpty() ? NO_LINK_MS : LINK_MS)) return url.isEmpty() ? null : url;
+        }
+        if (now < watchmodeRetryAt) return null;
+        try {
+            String url = watchmode.link(kind, id, name -> {
+                App a = resolve(name);
+                return a != null && a.pkg.equals(pkg);
+            });
+            links.put(cacheKey, new JSONObject().put("url", url == null ? "" : url).put("at", now));
+            prefs.edit().putString("links", links.toString()).apply();
+            return url;
+        } catch (IOException e) {
+            Log.w(TAG, "link: " + e.getMessage());
+            boolean quota = e.getMessage() != null && (e.getMessage().contains("quota") || e.getMessage().contains("rejected"));
+            watchmodeRetryAt = now + (quota ? 6 * 3600_000L : 10 * 60_000L);
+            return null;
+        } catch (org.json.JSONException e) {
+            return null;
+        }
     }
 
     // MARK: - What the owner does

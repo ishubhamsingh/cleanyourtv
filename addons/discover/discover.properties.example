@@ -4,3 +4,6 @@ tmdb_key=
 # Country for "what streams where" (two letters) and the language of titles and genres.
 region=IN
 language=en-IN
+# Optional, free (api.watchmode.com): OK on a title opens that title in its app instead of the app's home.
+# Asked only when a title is opened (two requests the first time, then remembered for 30 days).
+watchmode_key=

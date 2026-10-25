@@ -75,10 +75,11 @@
         <!-- Coocaa OS sources for the Inputs menu (coocaa_sources); see CoocaaSources. -->
         <provider android:authorities="com.skyworth.tv.provider" />
         <provider android:authorities="com.skyworth.tv.sdk.provider" />
-        <!-- Discover: the extension's provider, and the streaming apps' search screens a title opens in. -->
+        <!-- Discover: the extension's provider, and the streaming apps' handlers for their https title links. -->
         <provider android:authorities="com.gathin.tvhome.discover" />
         <intent>
-            <action android:name="android.intent.action.SEARCH" />
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 

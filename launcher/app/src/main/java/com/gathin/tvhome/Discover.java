@@ -1,6 +1,5 @@
 package com.gathin.tvhome;
 
-import android.app.SearchManager;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -230,32 +229,52 @@ final class Discover {
     }
 
     /**
-     * Opens the title in its app: the app's own search for the title when it answers one (which usually lands on
-     * the title itself), else the app. Records the open for "For you". False when no app on the TV plays it.
+     * Opens the title in its app: on the title itself when the extension knows its address there (Watchmode, a
+     * moment's lookup the first time), else the app's home. Records the open for "For you". False when no app on the
+     * TV plays it; the launch itself follows a moment later.
      */
     boolean open(Context from, Item it) {
         if (!it.playable()) return false;
         PackageManager pm = ctx.getPackageManager();
-        Intent search = new Intent(Intent.ACTION_SEARCH).setPackage(it.pkg)
-                .putExtra(SearchManager.QUERY, it.title).putExtra("query", it.title)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        Intent launch = pm.getLeanbackLaunchIntentForPackage(it.pkg);
-        if (launch == null) launch = pm.getLaunchIntentForPackage(it.pkg);
-        Intent target = searchOpens(it.pkg) && pm.resolveActivity(search, 0) != null ? search : launch;
-        if (target == null) return false;
-        try {
-            from.startActivity(target.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        } catch (ActivityNotFoundException | SecurityException e) {
-            if (target == search && launch != null) from.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            else return false;
-        }
+        Intent app = pm.getLeanbackLaunchIntentForPackage(it.pkg);
+        if (app == null) app = pm.getLaunchIntentForPackage(it.pkg);
+        if (app == null) return false;
+        final Intent launch = app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         event("open", it);
+        io.execute(() -> {
+            Intent target = launch;
+            String url = link(it);
+            if (url != null) {
+                // A fresh task: an app already running would otherwise just come back to where it was.
+                Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(it.pkg)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                if (pm.resolveActivity(view, 0) != null) target = view;
+            }
+            final Intent go = target;
+            main.post(() -> {
+                try {
+                    from.startActivity(go);
+                } catch (ActivityNotFoundException | SecurityException e) {
+                    if (go != launch) from.startActivity(launch);
+                }
+            });
+        });
         return true;
     }
 
-    /** Apps whose search screen takes a title from another app. Filled in from tests on the TV. */
-    private static boolean searchOpens(String pkg) {
-        return true;
+    /** The title's address on its app, from the extension, or null. */
+    private String link(Item it) {
+        if (!available()) return null;
+        try {
+            Bundle b = new Bundle();
+            b.putString("key", it.key);
+            b.putString("pkg", it.pkg);
+            Bundle out = resolver.call(ROWS, "link", null, b);
+            return out == null ? null : out.getString("url");
+        } catch (RuntimeException e) {
+            android.util.Log.w("TvHome.Discover", "link: " + e.getMessage());
+            return null;
+        }
     }
 
     // MARK: - Artwork

@@ -11,7 +11,9 @@ the launcher through a content provider. The launcher draws everything (its `dis
   its artwork, name, genre, year and app.
 - **Search:** a search pill in the top bar. Your apps match as you type; movies and shows follow, the ones on
   your apps first, with where the others stream.
-- **OK** opens the title in its app. Where the app takes a search from another app, it lands on that title.
+- **OK** opens the title in its app: on the title itself with an optional free [Watchmode](https://api.watchmode.com)
+  key (its address on that app in your country, looked up the first time a title is opened and kept for 30 days),
+  else the app's home. Netflix, JioHotstar, Apple TV and YouTube open their own title links.
   **Hold OK** for *More like this* and *Not interested*.
 - **For you** learns from what you open, like and hide, on the TV only. Opens count for three weeks or so, likes
   three times as much; a hidden title never comes back.
@@ -23,9 +25,11 @@ It cannot show Google TV's *Continue watching*: the apps share that with Google'
 | Permission | Why |
 |---|---|
 | `INTERNET` | TMDB: trending, new releases, recommendations, search, where-to-watch and the artwork. |
+| `INTERNET` (optional) | Watchmode, only with a `watchmode_key`: a title's address on its app, when it is opened. |
 | `com.gathin.tvhome.permission.DISCOVER` (declares it) | Signature level: only the launcher built with the same signing key can read the provider. |
 
-What is sent: your search words and TMDB ids of titles, with your TMDB key. No account, no telemetry, no ads.
+What is sent: your search words and TMDB ids of titles, with your TMDB key; with a Watchmode key, the TMDB id of a
+title you open. Every call names your country (`region` in `discover.properties`, India by default). No account, no telemetry, no ads.
 No background service: the extension starts when the launcher asks it something, and rebuilds its rows at most
 every four hours, or after a like or a hide. Everything it learns (opens, likes, hidden titles, how much each
 app is used) stays in its own storage on the TV (backups are off).

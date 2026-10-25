@@ -27,6 +27,7 @@ import java.util.Map;
  * call("status")                                      configured, error, built_at
  * call("event", type, {key, title})                   type: open, like, hide
  * call("usage", null, {package: score})               how much each app is used, from the launcher
+ * call("link", null, {key, pkg})                      the title's address on that app (Watchmode), or none
  * call("refresh")                                     rebuild the rows now
  * </pre>
  *
@@ -137,6 +138,9 @@ public final class DiscoverProvider extends ContentProvider {
                 c.setUsage(usage);
                 return out;
             }
+            case "link":
+                out.putString("url", extras == null ? null : c.link(extras.getString("key"), extras.getString("pkg")));
+                return out;
             case "refresh":
                 c.rebuild();
                 return out;

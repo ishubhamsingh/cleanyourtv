@@ -16,7 +16,7 @@ final class Services {
     /** {match key, label shown on the TV, package...}: the first installed package plays the service. */
     static final String[][] ALL = {
         {"netflix", "Netflix", "com.netflix.ninja"},
-        {"primevideo", "Prime Video", "com.amazon.amazonvideo.livingroom"},
+        {"prime", "Prime Video", "com.amazon.amazonvideo.livingroom"},   // TMDB "Amazon Prime Video", Watchmode "Amazon Prime"
         {"hotstar", "JioHotstar", "in.startv.hotstar"},          // TMDB: "JioHotstar" (earlier "Disney Plus Hotstar")
         {"appletv", "Apple TV", "com.apple.atve.sony.appletv", "com.apple.atve.androidtv.appletv"},
         {"sonyliv", "SonyLIV", "com.sonyliv"},

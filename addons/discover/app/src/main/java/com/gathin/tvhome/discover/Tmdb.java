@@ -38,7 +38,10 @@ final class Tmdb {
         if (!configured()) throw new IOException("no TMDB key");
         boolean bearer = key.startsWith("eyJ");
         String sep = path.contains("?") ? "&" : "?";
-        String url = API + path + sep + "language=" + enc(language) + (bearer ? "" : "&api_key=" + enc(key));
+        // The country goes with every call: region (release dates, search ranking) as well as watch_region where
+        // a call asks what streams where.
+        String url = API + path + sep + "language=" + enc(language) + "&region=" + enc(region)
+                + (bearer ? "" : "&api_key=" + enc(key));
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(10000);

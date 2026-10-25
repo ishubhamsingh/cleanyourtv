@@ -18,6 +18,8 @@ public class ServicesTest {
         assertEquals("Netflix", label("Netflix Standard with Ads"));
         assertEquals("Prime Video", label("Amazon Prime Video"));
         assertEquals("Prime Video", label("Amazon Prime Video with Ads"));
+        assertEquals("Prime Video", label("Amazon Prime"));
+        assertEquals("Apple TV", label("AppleTV+"));
         assertEquals("JioHotstar", label("JioHotstar"));
         assertEquals("JioHotstar", label("Disney Plus Hotstar"));
         assertEquals("Apple TV", label("Apple TV+"));
