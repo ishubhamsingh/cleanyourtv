@@ -20,6 +20,12 @@ The launcher still has **no internet permission**. Anything online lives in a se
 
 ## Features
 
+<p align="center">
+  <img src="docs/fork/home.jpg" width="32%" alt="Home in the my-glass theme: clock, round top buttons with the animated music button first, and six apps in the glass dock">
+  <img src="docs/fork/discover.jpg" width="32%" alt="Discover: the Trending on your apps tab focused on The Terminal List, its artwork filling the top of the screen and Prime Video under the poster">
+  <img src="docs/fork/now-playing.jpg" width="32%" alt="Now playing: the glass card under the top buttons with the album cover, Spotify, the track, the artist, a progress bar and previous, pause and next">
+</p>
+
 | Feature | What it does | Config |
 |---|---|---|
 | **Discover** | Under the dock, one row of posters with tabs: *For you*, *Trending on your apps*, *Top on your apps*, *New on your apps*. Only titles on apps installed on your TV. Focus a poster and the title takes the top of the screen (artwork, genre, year, app). A search pill finds apps and titles. | `discover` + `addons/discover` |
@@ -80,6 +86,8 @@ You need a computer on the same network as the TV, and this repo cloned.
    ```
 5. Set `discover` to `true` in `config.xml` (or `"discover": true` in a theme) and reinstall the launcher.
 
+<img src="docs/fork/discover.jpg" width="640" alt="Discover's Trending tab: the focused poster's artwork, genre, year and app fill the top of the screen">
+
 **Using it.** From the dock, press **Down** for the posters and **Down** again for your apps. **Up** from the
 posters reaches the tabs; moving along them switches the posters. **OK** opens a title; **hold OK** for *More
 like this* and *Not interested*. The search pill (magnifier) matches your apps as you type and titles a moment
@@ -116,6 +124,8 @@ TMDB settings any time.
    ```bash
    adb shell cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener
    ```
+<img src="docs/fork/now-playing.jpg" width="640" alt="The music button in the top bar and its open card with album art, title, artist, progress and controls">
+
 While something plays, a round **music button** joins the top-right buttons: three bars that move while music
 plays and rest while paused. **OK** on it drops a frosted-glass card over Home: album art, app, title,
 artist, a progress bar and previous / play-pause / next. **OK** on the top part opens the app's player. Any move off

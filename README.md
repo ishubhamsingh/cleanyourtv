@@ -30,6 +30,8 @@
 > - **The grid:** sorted by use, 6 apps per row in the *my-glass* theme, with a calmer top bar of round icons.
 > - **Sony BRAVIA remotes:** the app keys and the gear button work again.
 >
+> <img src="docs/fork/discover.jpg" width="49%" alt="This fork's Discover row: Trending on your apps, with the focused title's artwork across the top of the screen"> <img src="docs/fork/now-playing.jpg" width="49%" alt="This fork's now-playing card: album art, track, artist, progress and controls under the round top buttons">
+>
 > Features, setup and guides: **[FORK.md](FORK.md)**. Everything below is upstream's.
 
 **The viral tweet:** [x.com/gathint/status/2111379569030939102](https://x.com/gathint/status/2111379569030939102)
