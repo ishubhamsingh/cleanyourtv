@@ -26,7 +26,6 @@ public class ServicesTest {
         assertEquals("SonyLIV", label("SonyLIV"));
         assertEquals("ZEE5", label("Zee5"));
         assertEquals("MX Player", label("Amazon MX Player"));
-        assertEquals("aha", label("aha"));
     }
 
     @Test
@@ -41,5 +40,22 @@ public class ServicesTest {
     public void normalizeDropsSpacesDotsAndPlus() {
         assertEquals("appletv", Services.normalize("Apple TV+"));
         assertEquals("disneyplushotstar", Services.normalize("Disney Plus Hotstar"));
+    }
+
+    @Test
+    public void anyServiceMatchesAnInstalledAppByItsLabel() {
+        assertEquals(true, Services.labelMatches("Lionsgate Play", "Lionsgate Play"));
+        assertEquals(true, Services.labelMatches("Discovery+", "discovery+ | Stream TV Shows"));
+        assertEquals(true, Services.labelMatches("ShemarooMe", "ShemarooMe"));
+        assertEquals(true, Services.labelMatches("Eros Now", "Eros Now"));
+    }
+
+    @Test
+    public void shortLabelsAndResellersNeverMatch() {
+        assertEquals(false, Services.labelMatches("Pluto TV", "TV"));
+        assertEquals(false, Services.labelMatches("Lionsgate Play Amazon Channel", "Lionsgate Play"));
+        assertEquals(false, Services.labelMatches("Mubi", "Netflix"));
+        assertEquals(false, Services.labelMatches("", "Netflix"));
+        assertNull(Services.find("Lionsgate Play Amazon Channel"));
     }
 }

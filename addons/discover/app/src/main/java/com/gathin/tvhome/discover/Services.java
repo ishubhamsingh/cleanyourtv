@@ -3,8 +3,10 @@ package com.gathin.tvhome.discover;
 import java.util.Locale;
 
 /**
- * Streaming services as TMDB names them (from JustWatch, per country) and the Android TV apps that play them.
- * A TMDB name matches when it contains the service's key once spaces, dots and "+" are dropped, so
+ * Streaming services as TMDB names them (from JustWatch, per country) and the Android TV apps that play them. The
+ * table holds the names that don't match the app's label plainly (TMDB's "Amazon Prime Video" is the app
+ * "Prime Video"); any other service is matched to an installed app by its label (labelMatches), so an app installed
+ * later works without a change here. A table name matches when it contains the service's key once spaces, dots and "+" are dropped, so
  * "Amazon Prime Video with Ads" is Prime Video and "Sony Liv" is SonyLIV. Adapted from Free My TV's Recs (MIT).
  */
 final class Services {
@@ -23,11 +25,24 @@ final class Services {
         {"mxplayer", "MX Player", "com.mxtech.videoplayer.television"},
         {"disneyplus", "Disney+", "com.disney.disneyplus"},
         {"youtubepremium", "YouTube", "com.google.android.youtube.tv"},
-        {"lionsgateplay", "Lionsgate Play", "com.lionsgateplay.videoapp"},
-        {"sunnxt", "Sun NXT", "com.suntv.sunnxt"},
-        {"aha", "aha", "ahaflix.tv"},
-        {"hoichoi", "hoichoi", "com.viewlift.hoichoi"},
     };
+
+    /**
+     * A TMDB service name and an app's label on the TV name the same service: equal once normalized, or one holds
+     * the other ("Lionsgate Play" and "Lionsgate Play: Movies"), but only for names of 4 characters or more, so a
+     * label like "TV" never matches. Resellers ("Lionsgate Play Amazon Channel") are not the app: they never match.
+     */
+    static boolean labelMatches(String tmdbName, String appLabel) {
+        String n = normalize(tmdbName), l = normalize(appLabel);
+        if (n.isEmpty() || l.isEmpty() || isChannel(n)) return false;
+        if (n.equals(l)) return true;
+        return n.length() >= 4 && l.length() >= 4 && (n.contains(l) || l.contains(n));
+    }
+
+    /** "X Amazon Channel", "X Apple TV Channel", "X Roku Premium Channel": sold inside another app. */
+    static boolean isChannel(String normalized) {
+        return normalized.contains("channel");
+    }
 
     /** TMDB's name with case, spaces, dots, "+" and "-" removed: "Amazon Prime Video" -> "amazonprimevideo". */
     static String normalize(String name) {
@@ -37,11 +52,8 @@ final class Services {
     /** The ALL row for a TMDB provider name, or null for a service no TV app here plays. */
     static String[] find(String tmdbName) {
         String n = normalize(tmdbName);
-        if (n.isEmpty()) return null;
-        for (String[] s : ALL) {
-            // "aha" is a whole name, not a part of one ("Shahid" is not aha).
-            if (s[0].equals("aha") ? n.equals("aha") || n.startsWith("ahavideo") : n.contains(s[0])) return s;
-        }
+        if (n.isEmpty() || isChannel(n)) return null;
+        for (String[] s : ALL) if (n.contains(s[0])) return s;
         return null;
     }
 }

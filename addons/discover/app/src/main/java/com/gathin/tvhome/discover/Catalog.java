@@ -143,16 +143,16 @@ final class Catalog {
     /** What the rows depend on besides time: the installed services, the most used one and the country. */
     private String signature() {
         StringBuilder sb = new StringBuilder(tmdb.region).append('|').append(VERSION);
-        for (String[] s : installed()) sb.append('|').append(s[0]);
+        for (App a : services()) sb.append('|').append(a.pkg);
         String top = topService();
         sb.append("|top=").append(top == null ? "" : top);
         return sb.toString();
     }
 
     private List<Row> build() throws Exception {
-        List<String[]> services = installed();
-        if (services.isEmpty()) throw new IOException("none of the TV's streaming apps are known to Discover");
-        Map<Integer, String[]> ids = providerIds(services);
+        Map<Integer, App> ids = providerIds();
+        List<App> services = distinct(ids.values());
+        if (services.isEmpty()) throw new IOException("none of the TV's apps stream anything TMDB lists here");
         loadGenres();
         Set<String> hidden = hidden();
         Set<String> seen = new HashSet<>(hidden);
@@ -185,23 +185,25 @@ final class Catalog {
 
         // 3. Popular on the most used app (the launcher reports which apps are opened most).
         String top = topService();
-        String[] topService = null;
-        for (String[] s : services) if (s[0].equals(top)) topService = s;
-        if (topService == null && !services.isEmpty()) topService = services.get(0);
-        Integer topId = null;
-        for (Map.Entry<Integer, String[]> e : ids.entrySet()) if (e.getValue() == topService) topId = e.getKey();
-        if (topService != null && topId != null) {
-            String common = "&watch_region=" + tmdb.region + "&with_watch_providers=" + topId
+        App topApp = services.get(0);
+        for (App a : services) if (a.pkg.equals(top)) topApp = a;
+        // Every TMDB id of that app's service ("Netflix" and "Netflix Standard with Ads").
+        StringBuilder topIds = new StringBuilder();
+        for (Map.Entry<Integer, App> e : ids.entrySet()) {
+            if (e.getValue().pkg.equals(topApp.pkg)) topIds.append(topIds.length() == 0 ? "" : "%7C").append(e.getKey());
+        }
+        if (topIds.length() > 0) {
+            String common = "&watch_region=" + tmdb.region + "&with_watch_providers=" + topIds
                     + "&with_watch_monetization_types=flatrate%7Cfree%7Cads&sort_by=popularity.desc&include_adult=false";
             List<Title> m = list(tmdb.get("/discover/movie?vote_count.gte=50" + common), "movie");
             List<Title> t = list(tmdb.get("/discover/tv?vote_count.gte=30" + common), "tv");
             List<Title> both = alternate(m, t);
             for (Title x : both) {
-                x.pkg = packageOf(topService);
-                x.app = topService[1];
+                x.pkg = topApp.pkg;
+                x.app = topApp.label;
                 describe(x);
             }
-            String title = seeds.isEmpty() ? "Popular on " + topService[1] : "Top on " + topService[1];
+            String title = seeds.isEmpty() ? "Popular on " + topApp.label : "Top on " + topApp.label;
             addRow(out, seen, "top_app", title, both);
         }
 
@@ -303,18 +305,19 @@ final class Catalog {
         t.app = null;
         t.elsewhere.clear();
         for (int i = 0; i < names.length(); i++) {
-            String[] s = Services.find(names.optString(i));
-            String pkg = s == null ? null : packageOf(s);
-            if (pkg == null) {
-                String name = s == null ? names.optString(i) : s[1];
-                if (!t.elsewhere.contains(name)) t.elsewhere.add(name);
+            String name = names.optString(i);
+            App a = resolve(name);
+            if (a == null) {
+                String[] known = Services.find(name);
+                String shown = known == null ? name : known[1];
+                if (!Services.isChannel(Services.normalize(name)) && !t.elsewhere.contains(shown)) t.elsewhere.add(shown);
                 continue;
             }
-            double u = usage.getOrDefault(pkg, 0d);
+            double u = usage.getOrDefault(a.pkg, 0d);
             if (u > best) {
                 best = u;
-                t.pkg = pkg;
-                t.app = s[1];
+                t.pkg = a.pkg;
+                t.app = a.label;
             }
         }
         describe(t);
@@ -332,8 +335,8 @@ final class Catalog {
         t.meta = String.join(" · ", parts);
     }
 
-    /** TMDB's provider ids in this country for the installed services. */
-    private Map<Integer, String[]> providerIds(List<String[]> services) throws IOException {
+    /** TMDB's provider ids in this country whose service has an app on the TV, fetched at most once a week. */
+    private Map<Integer, App> providerIds() throws IOException {
         JSONObject saved = json(prefs.getString("ids", null));
         if (saved == null || System.currentTimeMillis() - saved.optLong("at") > IDS_MS
                 || !tmdb.region.equals(saved.optString("region"))) {
@@ -349,12 +352,16 @@ final class Catalog {
             }
             prefs.edit().putString("ids", saved.toString()).apply();
         }
-        Map<Integer, String[]> out = new HashMap<>();
-        JSONArray list = saved.optJSONArray("list");
+        return resolveIds(saved.optJSONArray("list"));
+    }
+
+    /** TMDB's provider list resolved against the TV's apps, offline. */
+    private Map<Integer, App> resolveIds(JSONArray list) {
+        Map<Integer, App> out = new LinkedHashMap<>();
         for (int i = 0; list != null && i < list.length(); i++) {
             JSONObject o = list.optJSONObject(i);
-            String[] s = o == null ? null : Services.find(o.optString("provider_name"));
-            if (s != null && services.contains(s)) out.put(o.optInt("provider_id"), s);
+            App a = o == null ? null : resolve(o.optString("provider_name"));
+            if (a != null) out.put(o.optInt("provider_id"), a);
         }
         return out;
     }
@@ -506,17 +513,16 @@ final class Catalog {
         return out;
     }
 
-    /** The match key of the installed service the owner opens most, or null before the launcher said. */
+    /** The package of the streaming app the owner opens most, or null before the launcher said. */
     private String topService() {
         Map<String, Double> usage = usage();
         String best = null;
         double bestScore = 0;
-        for (String[] s : installed()) {
-            String pkg = packageOf(s);
-            double u = usage.getOrDefault(pkg, 0d);
+        for (App a : services()) {
+            double u = usage.getOrDefault(a.pkg, 0d);
             if (u > bestScore) {
                 bestScore = u;
-                best = s[0];
+                best = a.pkg;
             }
         }
         return best;
@@ -534,22 +540,80 @@ final class Catalog {
         return new HashSet<>(prefs.getStringSet("hidden", Collections.emptySet()));
     }
 
-    // MARK: - Installed apps
+    // MARK: - The TV's apps
 
-    /** The Services rows with an app on the TV. */
-    private List<String[]> installed() {
-        List<String[]> out = new ArrayList<>();
-        for (String[] s : Services.ALL) if (packageOf(s) != null) out.add(s);
+    /** A streaming service with its app on the TV: the package, and the service's name as shown ("Netflix"). */
+    static final class App {
+        final String pkg, label;
+
+        App(String pkg, String label) {
+            this.pkg = pkg;
+            this.label = label;
+        }
+    }
+
+    private volatile Map<String, String> tvApps;
+    private volatile long tvAppsAt;
+
+    /** Package -> label of every app with a TV entry point, read from the TV, at most once a minute. */
+    private Map<String, String> tvApps() {
+        Map<String, String> apps = tvApps;
+        if (apps != null && System.currentTimeMillis() - tvAppsAt < 60_000L) return apps;
+        PackageManager pm = ctx.getPackageManager();
+        Map<String, String> fresh = new LinkedHashMap<>();
+        for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(new android.content.Intent(
+                android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LEANBACK_LAUNCHER), 0)) {
+            String pkg = ri.activityInfo.packageName;
+            if (!pkg.startsWith("com.gathin.tvhome")) fresh.putIfAbsent(pkg, String.valueOf(ri.loadLabel(pm)));
+        }
+        tvApps = fresh;
+        tvAppsAt = System.currentTimeMillis();
+        return fresh;
+    }
+
+    /**
+     * The app on the TV that plays a TMDB service, or null: by the Services table for names that differ from the
+     * app's label, else by the label itself, so any app installed later is found.
+     */
+    App resolve(String tmdbName) {
+        Map<String, String> apps = tvApps();
+        String[] known = Services.find(tmdbName);
+        if (known != null) {
+            for (int i = 2; i < known.length; i++) if (apps.containsKey(known[i])) return new App(known[i], known[1]);
+            return null;
+        }
+        for (Map.Entry<String, String> e : apps.entrySet()) {
+            if (Services.labelMatches(tmdbName, e.getValue())) return new App(e.getKey(), tmdbName);
+        }
+        return null;
+    }
+
+    /**
+     * The streaming apps on the TV, offline: from the provider list saved by the last build, or before there is
+     * one, the Services table.
+     */
+    private List<App> services() {
+        JSONObject saved = json(prefs.getString("ids", null));
+        if (saved != null) return distinct(resolveIds(saved.optJSONArray("list")).values());
+        List<App> out = new ArrayList<>();
+        Map<String, String> apps = tvApps();
+        for (String[] s : Services.ALL) {
+            for (int i = 2; i < s.length; i++) {
+                if (apps.containsKey(s[i])) {
+                    out.add(new App(s[i], s[1]));
+                    break;
+                }
+            }
+        }
         return out;
     }
 
-    /** The service's first package installed and enabled on the TV, or null. */
-    private String packageOf(String[] s) {
-        PackageManager pm = ctx.getPackageManager();
-        for (int i = 2; i < s.length; i++) {
-            if (pm.getLeanbackLaunchIntentForPackage(s[i]) != null || pm.getLaunchIntentForPackage(s[i]) != null) return s[i];
-        }
-        return null;
+    /** One App per package, in order. */
+    private static List<App> distinct(java.util.Collection<App> apps) {
+        List<App> out = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (App a : apps) if (seen.add(a.pkg)) out.add(a);
+        return out;
     }
 
     // MARK: - Images
