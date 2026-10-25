@@ -58,4 +58,12 @@ public class DiscoverItemTest {
         assertFalse(Shelf.sameRows(a, Collections.singletonList(row("trending", "tv:1", "movie:2"))));
         assertFalse(Shelf.sameRows(a, Arrays.asList(row("trending", "tv:1", "movie:2"), row("for_you", "movie:3"))));
     }
+
+    @Test
+    public void theRememberedTabSurvivesARefreshAndFallsBackToTheFirst() {
+        List<Discover.Row> rows = Arrays.asList(row("for_you", "tv:1"), row("trending", "movie:2"), row("new", "movie:3"));
+        assertEquals(1, Shelf.selectedIndex(rows, "trending"));
+        assertEquals(0, Shelf.selectedIndex(rows, "top_app"));
+        assertEquals(0, Shelf.selectedIndex(rows, null));
+    }
 }

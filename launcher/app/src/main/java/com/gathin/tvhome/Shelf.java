@@ -24,19 +24,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Discover's rows under the dock: one block in the app grid (AppAdapter's SHELF entry) holding a titled row of
- * posters per Discover row. Posters are as wide as the app tiles and line up with their columns; the focused poster
- * stays at the row's left edge, as on Google TV, and each row remembers where it was. Up from the first row goes back
- * to the dock and Down from the last into the grid (Listener.onShelfExit).
+ * Discover under the dock: one block in the app grid (AppAdapter's SHELF entry) with a strip of tabs, one per Discover
+ * row (For you, Trending on your apps, ...), over a single row of posters, so the apps below are only two presses
+ * from the dock. Focusing a tab shows its posters. Posters are as wide as the app tiles and line up with their
+ * columns; the focused poster stays at the row's left edge, as on Google TV, and each tab remembers where it was.
+ * Down from the dock lands on the posters; Up from them goes to the tabs, and Up again back to the dock
+ * (Listener.onShelfExit); Down from the posters goes into the grid.
  */
 final class Shelf {
 
     interface Listener {
-        /** A poster took focus; `row` is its row's view, for placing the top shelf above it. */
+        /**
+         * A poster took focus, or a tab (then `poster` is the tab and `item` the poster that tab would focus); `row`
+         * is the block's row view, for placing the top shelf above it.
+         */
         void onPosterFocused(Discover.Item item, View poster, View row);
         void onPosterClicked(Discover.Item item);
         void onPosterLongPress(Discover.Item item, View poster);
-        /** Up from the first row (up = true) or Down from the last. */
+        /** Up from the tabs (up = true) or Down from the posters. */
         void onShelfExit(boolean up);
     }
 
@@ -46,7 +51,11 @@ final class Shelf {
     private List<Discover.Row> rows = new ArrayList<>();
     /** Focused poster per row id, kept while the rows refresh. */
     private final Map<String, Integer> lastIndex = new HashMap<>();
-    private LinearLayout block;
+    /** The row (tab) shown, by id, kept while the rows refresh. */
+    private String selected;
+    private LinearLayout block, rowView, tabs;
+    private RecyclerView list;
+    private PosterAdapter adapter;
     private int tileW, tileH, cellW;
 
     Shelf(Context ctx, Listener listener, boolean animations) {
@@ -57,6 +66,11 @@ final class Shelf {
 
     boolean isEmpty() {
         return rows.isEmpty();
+    }
+
+    /** Focus is on a tab or a poster: rebuilding the block now would drop it. */
+    boolean hasFocus() {
+        return block != null && block.hasFocus();
     }
 
     void setRows(List<Discover.Row> rows) {
@@ -79,6 +93,12 @@ final class Shelf {
         return true;
     }
 
+    /** The index of the selected row: the remembered one if it is still there, else the first. */
+    static int selectedIndex(List<Discover.Row> rows, String selected) {
+        for (int i = 0; i < rows.size(); i++) if (rows.get(i).id.equals(selected)) return i;
+        return 0;
+    }
+
     /** The block's view: created once, filled whenever the rows change. */
     View create(ViewGroup parent, int tileW, int tileH, int cellW) {
         this.tileW = tileW;
@@ -96,92 +116,144 @@ final class Shelf {
 
     private void fill() {
         block.removeAllViews();
+        if (rows.isEmpty()) return;
         float d = ctx.getResources().getDisplayMetrics().density;
-        for (int r = 0; r < rows.size(); r++) {
-            Discover.Row row = rows.get(r);
-            LinearLayout rowView = new LinearLayout(ctx);
-            rowView.setOrientation(LinearLayout.VERTICAL);
-            rowView.setClipChildren(false);
-            rowView.setClipToPadding(false);
-            TextView title = new TextView(ctx);
-            title.setText(row.title);
-            title.setTextColor(0xCCFFFFFF);
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            title.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(ctx, R.font.outfit_medium));
-            title.setLetterSpacing(0.02f);
-            title.setPadding((cellW - tileW) / 2 + Math.round(2 * d), Math.round((r == 0 ? 10 : 18) * d), 0, Math.round(2 * d));
-            rowView.addView(title);
+        rowView = new LinearLayout(ctx);
+        rowView.setOrientation(LinearLayout.VERTICAL);
+        rowView.setClipChildren(false);
+        rowView.setClipToPadding(false);
 
-            RecyclerView list = new RecyclerView(ctx);
-            list.setClipChildren(false);
-            list.setClipToPadding(false);
-            list.setItemAnimator(null);
-            list.setHasFixedSize(true);
-            list.setLayoutManager(new LinearLayoutManager(ctx, LinearLayoutManager.HORIZONTAL, false) {
-                // Focus moves are scrolled by hand (the focused poster to the left edge), not by the default rule.
-                @Override
-                public boolean requestChildRectangleOnScreen(@NonNull RecyclerView parent, @NonNull View child,
-                                                             @NonNull Rect rect, boolean immediate, boolean focusedChildVisible) {
-                    return false;
-                }
+        tabs = new LinearLayout(ctx);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        tabs.setClipChildren(false);
+        tabs.setPadding((cellW - tileW) / 2 - Math.round(12 * d), Math.round(10 * d), 0, Math.round(4 * d));
+        int current = selectedIndex(rows, selected);
+        selected = rows.get(current).id;
+        for (int i = 0; i < rows.size(); i++) {
+            final int index = i;
+            TextView tab = new TextView(ctx);
+            tab.setText(rows.get(i).title);
+            tab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            tab.setTypeface(androidx.core.content.res.ResourcesCompat.getFont(ctx, R.font.outfit_medium));
+            tab.setTextColor(ctx.getColorStateList(R.color.shelf_tab_text));
+            tab.setBackgroundResource(R.drawable.shelf_tab_bg);
+            tab.setPadding(Math.round(14 * d), Math.round(7 * d), Math.round(14 * d), Math.round(7 * d));
+            tab.setFocusable(true);
+            tab.setActivated(i == current);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(Math.round(6 * d));
+            tab.setLayoutParams(lp);
+            tab.setOnFocusChangeListener((v, focused) -> {
+                if (!focused) return;
+                select(index);
+                Discover.Row row = rows.get(index);
+                int at = Math.max(0, Math.min(lastIndex.getOrDefault(row.id, 0), row.items.size() - 1));
+                if (!row.items.isEmpty()) listener.onPosterFocused(row.items.get(at), v, rowView);
             });
-            final int rowIndex = r;
-            PosterAdapter adapter = new PosterAdapter(ctx, tileW, tileH, cellW, animations, new PosterAdapter.Listener() {
-                @Override
-                public void onFocused(Discover.Item item, View poster, int position) {
-                    lastIndex.put(row.id, position);
-                    View item0 = (View) poster.getParent();
-                    int dx = item0.getLeft() - list.getPaddingLeft();
-                    if (dx != 0) {
-                        if (animations) list.smoothScrollBy(dx, 0, new DecelerateInterpolator(1.6f));
-                        else list.scrollBy(dx, 0);
-                    }
-                    listener.onPosterFocused(item, poster, rowView);
+            tab.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    listener.onShelfExit(true);
+                    return true;
                 }
-
-                @Override
-                public void onClicked(Discover.Item item) {
-                    listener.onPosterClicked(item);
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    focusPosters();
+                    return true;
                 }
-
-                @Override
-                public void onLongPress(Discover.Item item, View poster) {
-                    listener.onPosterLongPress(item, poster);
-                }
-
-                @Override
-                public boolean onKey(int position, int keyCode) {
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                        if (rowIndex == 0) listener.onShelfExit(true);
-                        else focusRow(rowIndex - 1);
-                        return true;
-                    }
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                        if (rowIndex == rows.size() - 1) listener.onShelfExit(false);
-                        else focusRow(rowIndex + 1);
-                        return true;
-                    }
-                    // The row's ends: nothing past them (the default focus search would leave the row).
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return position == 0;
-                    return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && position == row.items.size() - 1;
-                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return index == 0;
+                return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && index == rows.size() - 1;
             });
-            adapter.setItems(row.items);
-            list.setAdapter(adapter);
-            list.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                    PosterAdapter.itemHeight(tileH, d)));
-            Integer at = lastIndex.get(row.id);
-            if (at != null && at > 0 && at < row.items.size()) ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(at, 0);
-            rowView.addView(list);
-            block.addView(rowView);
+            tab.setOnClickListener(v -> focusPosters());
+            tabs.addView(tab);
         }
+        rowView.addView(tabs);
+
+        list = new RecyclerView(ctx);
+        list.setClipChildren(false);
+        list.setClipToPadding(false);
+        list.setItemAnimator(null);
+        list.setHasFixedSize(true);
+        list.setLayoutManager(new LinearLayoutManager(ctx, LinearLayoutManager.HORIZONTAL, false) {
+            // Focus moves are scrolled by hand (the focused poster to the left edge), not by the default rule.
+            @Override
+            public boolean requestChildRectangleOnScreen(@NonNull RecyclerView parent, @NonNull View child,
+                                                         @NonNull Rect rect, boolean immediate, boolean focusedChildVisible) {
+                return false;
+            }
+        });
+        adapter = new PosterAdapter(ctx, tileW, tileH, cellW, animations, new PosterAdapter.Listener() {
+            @Override
+            public void onFocused(Discover.Item item, View poster, int position) {
+                lastIndex.put(selected, position);
+                View item0 = (View) poster.getParent();
+                int dx = item0.getLeft() - list.getPaddingLeft();
+                if (dx != 0) {
+                    if (animations) list.smoothScrollBy(dx, 0, new DecelerateInterpolator(1.6f));
+                    else list.scrollBy(dx, 0);
+                }
+                listener.onPosterFocused(item, poster, rowView);
+            }
+
+            @Override
+            public void onClicked(Discover.Item item) {
+                listener.onPosterClicked(item);
+            }
+
+            @Override
+            public void onLongPress(Discover.Item item, View poster) {
+                listener.onPosterLongPress(item, poster);
+            }
+
+            @Override
+            public boolean onKey(int position, int keyCode) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                    focusTab();
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    listener.onShelfExit(false);
+                    return true;
+                }
+                // The row's ends: nothing past them (the default focus search would leave the row).
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return position == 0;
+                return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && position == adapter.getItemCount() - 1;
+            }
+        });
+        list.setAdapter(adapter);
+        list.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                PosterAdapter.itemHeight(tileH, d)));
+        rowView.addView(list);
+        block.addView(rowView);
+        show(current);
     }
 
-    /** Focuses a row's remembered poster (the first, for a row not visited yet). */
-    void focusRow(int index) {
-        if (block == null || index < 0 || index >= block.getChildCount()) return;
+    /** Shows a tab's posters, scrolled to where that tab was left. */
+    private void select(int index) {
+        if (index < 0 || index >= rows.size()) return;
+        String id = rows.get(index).id;
+        if (id.equals(selected) && adapter.getItemCount() > 0) return;
+        selected = id;
+        for (int i = 0; i < tabs.getChildCount(); i++) tabs.getChildAt(i).setActivated(i == index);
+        show(index);
+    }
+
+    private void show(int index) {
         Discover.Row row = rows.get(index);
-        RecyclerView list = (RecyclerView) ((ViewGroup) block.getChildAt(index)).getChildAt(1);
+        adapter.setItems(row.items);
+        int at = Math.max(0, Math.min(lastIndex.getOrDefault(row.id, 0), row.items.size() - 1));
+        ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(at, 0);
+    }
+
+    private void focusTab() {
+        if (tabs == null) return;
+        tabs.getChildAt(selectedIndex(rows, selected)).requestFocus();
+    }
+
+    /** Focuses the selected tab's remembered poster. */
+    private void focusPosters() {
+        if (list == null || rows.isEmpty()) return;
+        Discover.Row row = rows.get(selectedIndex(rows, selected));
         int at = Math.max(0, Math.min(lastIndex.getOrDefault(row.id, 0), row.items.size() - 1));
         RecyclerView.ViewHolder vh = list.findViewHolderForAdapterPosition(at);
         if (vh != null) {
@@ -195,24 +267,13 @@ final class Shelf {
         });
     }
 
-    int rowCount() {
-        return rows.size();
+    /** Focus into the block: its posters (the block has one row; `index` is kept for the callers). */
+    void focusRow(int index) {
+        focusPosters();
     }
 
-    /**
-     * The rows above `index` fade out, so the focused row's title has the room above it (the dock fades the same
-     * way); -1 shows every row again, for when focus leaves the rows.
-     */
-    void showFrom(int index) {
-        if (block == null) return;
-        for (int i = 0; i < block.getChildCount(); i++) {
-            View row = block.getChildAt(i);
-            float target = index >= 0 && i < index ? 0f : 1f;
-            if (row.getAlpha() == target) continue;
-            row.animate().cancel();
-            if (animations) row.animate().alpha(target).setDuration(220).start();
-            else row.setAlpha(target);
-        }
+    int rowCount() {
+        return rows.isEmpty() ? 0 : 1;
     }
 
     /** Posters: Discover titles, or (in search) apps. Sized like the app tiles. */

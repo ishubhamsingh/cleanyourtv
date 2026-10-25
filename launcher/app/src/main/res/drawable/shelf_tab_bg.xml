@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Discover's tabs (For you · Trending · ...): a white pill while focused, a faint one for the selected tab. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#F2FFFFFF" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#26FFFFFF" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+</selector>

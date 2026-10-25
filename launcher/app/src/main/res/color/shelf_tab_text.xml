@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Discover tab text: dark on the focused white pill, white when selected, dimmed otherwise. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="#FF101014" />
+    <item android:state_activated="true" android:color="#FFFFFFFF" />
+    <item android:color="#99FFFFFF" />
+</selector>

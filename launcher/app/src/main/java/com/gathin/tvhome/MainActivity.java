@@ -1637,7 +1637,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         shelfFocusRow = -1;
         fadeDock(false);
-        if (shelf != null) shelf.showFrom(-1);
         if (pendingShelfRows != null) {
             List<Discover.Row> rows = pendingShelfRows;
             pendingShelfRows = null;
@@ -2054,9 +2053,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!discoverOn) return;
         discover.rows(rows -> {
             if (isDestroyed() || shelf.same(rows)) return;
-            // Rebuilding the rows under a focused poster would drop the focus: wait until it is back on a tile.
-            View focus = getCurrentFocus();
-            if (focus != null && focus.getId() == R.id.poster) {
+            // Rebuilding the rows under a focused tab or poster would drop the focus: wait until it is back on a tile.
+            if (shelf.hasFocus()) {
                 pendingShelfRows = rows;
                 return;
             }
@@ -2121,7 +2119,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             fadeDock(true);
             ViewGroup block = (ViewGroup) row.getParent();
             shelfFocusRow = block == null ? 0 : block.indexOfChild(row);
-            shelf.showFrom(shelfFocusRow);
             // Park the focused row where the dock sits, with the title's top shelf above it, like the dock.
             Rect r = new Rect(0, 0, row.getWidth(), row.getHeight());
             grid.offsetDescendantRectToMyCoords(row, r);
