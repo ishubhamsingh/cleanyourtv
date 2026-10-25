@@ -42,4 +42,16 @@ public class ShelfSlotsTest {
         assertTrue(ShelfSlots.isSpacer(7, 4));
         assertFalse(ShelfSlots.isSpacer(8, 4));
     }
+
+    @Test
+    public void aRowThatFitsParksWhereTheDockSits() {
+        // row 1000..1300 parks its top at 600: bottom 900 fits a 1000-high grid with 30 kept free.
+        assertEquals(400, ShelfSlots.parkOffset(1000, 1300, 600, 1000, 30));
+    }
+
+    @Test
+    public void aTallerRowParksHigherSoItsBottomStaysOnScreen() {
+        // parked at 600 the bottom would be 1000, past 970: 30 more.
+        assertEquals(430, ShelfSlots.parkOffset(1000, 1400, 600, 1000, 30));
+    }
 }

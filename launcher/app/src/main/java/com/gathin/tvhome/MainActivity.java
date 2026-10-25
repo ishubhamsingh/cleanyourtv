@@ -2313,7 +2313,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Park the focused row where the dock sits, with the title's top shelf above it, like the dock.
             Rect r = new Rect(0, 0, row.getWidth(), row.getHeight());
             grid.offsetDescendantRectToMyCoords(row, r);
-            int dy = r.top - grid.getPaddingTop();
+            int dy = ShelfSlots.parkOffset(r.top, r.bottom, grid.getPaddingTop(), grid.getHeight(),
+                    (int) (AppAdapter.BOTTOM_ROOM_DP * density));
             boolean scroll = Math.abs(dy) > (int) (8 * density);
             if (scroll) {
                 if (!animations || reducedMotion) grid.scrollBy(0, dy);

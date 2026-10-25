@@ -25,4 +25,15 @@ final class ShelfSlots {
         if (dockSize > 1 && position == gridStart(dockSize) - 1) return 2;
         return 1;
     }
+
+    /**
+     * How far to scroll a focused poster row: its top to where the dock sits (`parkTop`), but higher when its bottom
+     * (the app name under the posters) would then pass `bottomRoom` above the grid's bottom: posters can be taller
+     * than the dock's tiles (more app columns than POSTER_COLUMNS).
+     */
+    static int parkOffset(int rowTop, int rowBottom, int parkTop, int gridHeight, int bottomRoom) {
+        int dy = rowTop - parkTop;
+        int overflow = (rowBottom - dy) - (gridHeight - bottomRoom);
+        return overflow > 0 ? dy + overflow : dy;
+    }
 }
