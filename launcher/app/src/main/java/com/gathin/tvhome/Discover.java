@@ -228,10 +228,30 @@ final class Discover {
         }
     }
 
+    /** Title key + app -> its address there ("" for none), as the extension answered; lookups run one at a time. */
+    private final Map<String, String> links = new java.util.concurrent.ConcurrentHashMap<>();
+    private final ExecutorService linkIo = Executors.newSingleThreadExecutor();
+
+    private static String linkKey(Item it) {
+        return it.key + "|" + it.pkg;
+    }
+
     /**
-     * Opens the title in its app: on the title itself when the extension knows its address there (Watchmode, a
-     * moment's lookup the first time), else the app's home. Records the open for "For you". False when no app on the
-     * TV plays it; the launch itself follows a moment later.
+     * Looks up the title's address ahead of OK (the launcher calls this once focus rests on a poster), so opening it
+     * doesn't wait for Watchmode. Each title is asked about once; the extension keeps the answer for 30 days.
+     */
+    void prefetch(Item it) {
+        if (it == null || !it.playable() || links.containsKey(linkKey(it))) return;
+        linkIo.execute(() -> {
+            if (links.containsKey(linkKey(it))) return;
+            String url = link(it);
+            links.put(linkKey(it), url == null ? "" : url);
+        });
+    }
+
+    /**
+     * Opens the title in its app: on the title itself when its address there is known (Watchmode, looked up ahead by
+     * prefetch, or now), else the app's home. Records the open for "For you". False when no app on the TV plays it.
      */
     boolean open(Context from, Item it) {
         if (!it.playable()) return false;
@@ -241,25 +261,37 @@ final class Discover {
         if (app == null) return false;
         final Intent launch = app.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         event("open", it);
-        io.execute(() -> {
-            Intent target = launch;
+        String known = links.get(linkKey(it));
+        if (known != null) {
+            start(from, target(pm, it, known, launch), launch);
+            return true;
+        }
+        linkIo.execute(() -> {
             String url = link(it);
-            if (url != null) {
-                // A fresh task: an app already running would otherwise just come back to where it was.
-                Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(it.pkg)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                if (pm.resolveActivity(view, 0) != null) target = view;
-            }
-            final Intent go = target;
-            main.post(() -> {
-                try {
-                    from.startActivity(go);
-                } catch (ActivityNotFoundException | SecurityException e) {
-                    if (go != launch) from.startActivity(launch);
-                }
-            });
+            links.put(linkKey(it), url == null ? "" : url);
+            Intent go = target(pm, it, url, launch);
+            main.post(() -> start(from, go, launch));
         });
         return true;
+    }
+
+    /** The intent that opens the title: its address in its app as a fresh task, or the app itself. */
+    private static Intent target(PackageManager pm, Item it, String url, Intent launch) {
+        if (url == null || url.isEmpty()) return launch;
+        // A fresh task: an app already running would otherwise just come back to where it was.
+        Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(it.pkg)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // Netflix keeps a partner link (source 30) through its profile and PIN screen; without it the link is lost there.
+        if ("com.netflix.ninja".equals(it.pkg)) view.putExtra("source", "30");
+        return pm.resolveActivity(view, 0) != null ? view : launch;
+    }
+
+    private static void start(Context from, Intent go, Intent launch) {
+        try {
+            from.startActivity(go);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            if (go != launch) from.startActivity(launch);
+        }
     }
 
     /** The title's address on its app, from the extension, or null. */

@@ -51,6 +51,11 @@ public class SearchActivity extends Activity {
     private String asked = "";
 
     private final Runnable runSearch = this::searchTitles;
+    /** The focused title's address is looked up once focus rests on it (Discover.prefetch). */
+    private Discover.Item prefetchItem;
+    private final Runnable prefetchLink = () -> {
+        if (prefetchItem != null) discover.prefetch(prefetchItem);
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +124,9 @@ public class SearchActivity extends Activity {
         return new Shelf.PosterAdapter.Listener() {
             @Override
             public void onFocused(Discover.Item item, View poster, int position) {
+                handler.removeCallbacks(prefetchLink);
+                prefetchItem = item.appArt == null ? item : null;
+                handler.postDelayed(prefetchLink, MainActivity.PREFETCH_DELAY_MS);
                 infoTitle.setText(item.title);
                 infoLine.setText(item.appArt != null ? getString(R.string.discover_apps) : item.line());
                 infoOverview.setText(item.overview == null ? "" : item.overview);
@@ -318,5 +326,6 @@ public class SearchActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         handler.removeCallbacks(runSearch);
+        handler.removeCallbacks(prefetchLink);
     }
 }

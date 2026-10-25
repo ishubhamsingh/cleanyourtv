@@ -2112,9 +2112,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.post(() -> shelf.focusRow(row));
     }
 
+    /** How long focus rests on a poster before its address is looked up (scrolling past costs no lookups). */
+    static final long PREFETCH_DELAY_MS = 500;
+    private Discover.Item prefetchItem;
+    private final Runnable prefetchLink = () -> {
+        if (discover != null) discover.prefetch(prefetchItem);
+    };
+
     private final Shelf.Listener shelfListener = new Shelf.Listener() {
         @Override
         public void onPosterFocused(Discover.Item item, View poster, View row) {
+            // Look the title's address up once focus rests on it, so OK opens it without waiting.
+            handler.removeCallbacks(prefetchLink);
+            prefetchItem = item;
+            handler.postDelayed(prefetchLink, PREFETCH_DELAY_MS);
             hideGlass();
             fadeDock(true);
             ViewGroup block = (ViewGroup) row.getParent();
