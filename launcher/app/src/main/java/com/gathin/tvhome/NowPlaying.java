@@ -197,9 +197,10 @@ final class NowPlaying {
         if (title.isEmpty()) title = appLabel(c.getPackageName());
         Bitmap art = null;
         if (m != null) {
-            art = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
-            if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+            // The cover before the display icon: Spotify puts its own logo in DISPLAY_ICON.
+            art = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
             if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
+            if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
         }
         PlaybackState s = c.getPlaybackState();
         long duration = m == null ? 0 : m.getLong(MediaMetadata.METADATA_KEY_DURATION);
