@@ -191,6 +191,14 @@
          still opens on a tap; "hold:scan:490:..." works for scancodes. A key with only a hold entry does nothing
          on a tap. A listed app that is not installed leaves the button doing nothing. Leave empty to omit. -->
     <string-array name="app_keys" translatable="false">
+        <!-- Sony BRAVIA 4K AE2 remote (India): its six app keys, by scancode. Sony's system service hands them to the
+             Google TV home, which is disabled here, so the key helper opens the apps itself. -->
+        <item>scan:496:com.sonypicturescore</item>          <!-- Sony Pictures Core (BRAVIA CORE) -->
+        <item>scan:583:com.netflix.ninja</item>             <!-- Netflix -->
+        <item>scan:485:com.google.android.youtube.tv</item> <!-- YouTube -->
+        <item>scan:490:com.amazon.amazonvideo.livingroom</item> <!-- Prime Video -->
+        <item>scan:507:com.crunchyroll.crunchyroid</item>   <!-- Crunchyroll -->
+        <item>scan:509:com.sonyliv</item>                   <!-- SonyLIV -->
     </string-array>
 
     <!-- Package of the stock launcher, for TVs whose firmware turns it back on after it was disabled. XGIMI's
