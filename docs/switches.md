@@ -46,7 +46,7 @@ fits the rules; keys from before the rule sit on its wanted list until a screens
 | `uniform_tiles` | <img src="switches/uniform_tiles.jpg" width="320" alt="uniform_tiles on a TV"> |
 | `grid_order` | <img src="switches/grid_order.jpg" width="320" alt="grid_order frequent on a TV: the most used apps first under the dock"> |
 | `discover` | <img src="switches/discover.jpg" width="320" alt="discover on a TV: search results for Lupin, the one on Netflix first"> |
-| `now_playing` | <img src="switches/now_playing.jpg" width="320" alt="now_playing on a TV: Spotify's track with previous, play and next under the top bar"> |
+| `now_playing` | <img src="switches/now_playing.jpg" width="320" alt="now_playing on a TV: the animated music button in the top bar and its open card with Spotify's album art, title, artist, progress, previous, pause and next"> |
 | `lunar_date` | <img src="switches/lunar_date.jpg" width="320" alt="lunar_date on a TV"> |
 | `dock_band` | <img src="switches/dock_band.jpg" width="320" alt="dock_band on a TV"> |
 | `show_library_pill` | <img src="switches/show_library_pill.jpg" width="320" alt="show_library_pill on a TV"> |

@@ -1,7 +1,7 @@
 # This fork: Discover, Now playing and more
 
 A fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) with features on top of the clean
-launcher: search and recommendations on the home screen, a now-playing card, a grid that follows what you use,
+launcher: search and recommendations on the home screen, a now-playing button and card, a grid that follows what you use,
 and a working remote on Sony BRAVIA Google TVs. Built and used daily on a **Sony BRAVIA 4K AE2** (Google TV 14,
 India). Everything upstream still applies; this page covers only what the fork adds.
 
@@ -29,7 +29,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Now playing** | An animated music button in the top bar while Spotify or any media app plays; OK opens a glass card with art, title, artist, progress and previous / play-pause / next. | `now_playing` + one ADB grant |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
-| **my-glass theme** | The glass look with 14 rotating landscapes, 6 app columns, three round top buttons (search, inputs, settings), stats line and a 3-minute idle clock. | `themes/my-glass` |
+| **my-glass theme** | The glass look with 14 rotating landscapes, 6 app columns, round icon-only top buttons (music while playing, search, inputs, settings), stats line and a 3-minute idle clock. | `themes/my-glass` |
 
 ## Set up a TV from scratch
 
@@ -154,6 +154,10 @@ with `adb shell input` do not go through the helper; test with the real remote.
   to change it; `tools/theme.sh --reset` goes back to the plain look.
 - **grid_order:** `alphabetical` (upstream's), `recent` (last opened first) or `frequent` (most opened, the last
   week or two counting most). The dock keeps its own order.
+- **columns:** my-glass uses `"columns": 6` (like Apple TV on a 55" screen). Discover's posters stay four across
+  however many app columns there are, so artwork and titles stay readable; a focused poster row sits a little
+  higher when needed so the app name under it is never cut off.
+- **A calmer top bar:** `"show_network_pill": false` and `"icon_only_inputs": true` leave only round icons.
 
 ## Troubleshooting
 

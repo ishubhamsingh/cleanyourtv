@@ -22,10 +22,15 @@
   <a href="docs/PRESS.md"><img src="docs/card.jpg" alt="293 TV models · 83 brands · 28 languages · 517 KB launcher. Featured in TechCrunch, TechRadar, Tom's Guide, Mashable, Android Authority, XDA, FlatpanelsHD, It's FOSS, Phandroid, GIGAZINE, Xataka, WinFuture, Frandroid, Macitynet, Techaeris, TechPP and 180 more: 196 articles from 32 countries. Before: stock Google TV home with a sponsored ad. After: the Clean Your TV launcher." width="800"></a>
 </p>
 
-> **About this fork** ([ishubhamsingh/cleanyourtv](https://github.com/ishubhamsingh/cleanyourtv)): search,
-> trending and *For you* rows on the home screen (the launcher stays offline), a now-playing card for Spotify and
-> other music, a grid sorted by use, and a working remote on Sony BRAVIA Google TVs. Features, setup and guides:
-> **[FORK.md](FORK.md)**. Everything below is upstream's.
+> **About this fork** ([ishubhamsingh/cleanyourtv](https://github.com/ishubhamsingh/cleanyourtv)):
+> - **Discover:** search, plus *For you*, *Trending*, *Top* and *New on your apps* posters under the dock. OK opens
+>   the title itself in its app. Your likes and hides are backed up to your TMDB account. The launcher stays offline.
+> - **Now playing:** a music button in the top bar that animates while Spotify or other music plays. OK opens a
+>   glass card with album art, title, artist, progress and controls.
+> - **The grid:** sorted by use, 6 apps per row in the *my-glass* theme, with a calmer top bar of round icons.
+> - **Sony BRAVIA remotes:** the app keys and the gear button work again.
+>
+> Features, setup and guides: **[FORK.md](FORK.md)**. Everything below is upstream's.
 
 **The viral tweet:** [x.com/gathint/status/2111379569030939102](https://x.com/gathint/status/2111379569030939102)
 
