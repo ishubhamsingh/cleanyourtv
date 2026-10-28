@@ -352,6 +352,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
                     ctx.getDrawable(R.drawable.ic_home_settings), null, 0));
         }
+        if (dashboard && fillDock && dockRow) keepDockByUse(fresh);
         docked = 0;
         while (docked < fresh.size() && isDocked(fresh.get(docked))) docked++;
         emptySlots = dockRow && !reordering ? DockSlots.empty(docked, dockSize, fresh.size(), fillDock) : 0;
@@ -661,6 +662,27 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (ca != cb) return ca ? -1 : 1;
             return a.label.compareToIgnoreCase(b.label);
         });
+    }
+
+    /**
+     * Dashboard: the All apps chips re-sort the grid, not the dock. The dock's free slots (fill_dock) always take the
+     * most used apps, so the dock stays put whichever order the grid below is in.
+     */
+    private void keepDockByUse(List<Entry> fresh) {
+        int docked = 0;
+        while (docked < fresh.size() && isDocked(fresh.get(docked))) docked++;
+        int free = dockSize - docked;
+        if (free <= 0 || Config.GRID_FREQUENT.equals(gridOrder)) return;
+        List<Entry> rest = new ArrayList<>(fresh.subList(docked, fresh.size()));
+        List<Entry> byUse = new ArrayList<>(rest);
+        Map<String, Double> use = new HashMap<>();
+        for (Entry e : byUse) use.put(e.pkg, Frecency.get(ctx, e.pkg));
+        Collections.sort(byUse, (a, b) -> Double.compare(use.get(b.pkg), use.get(a.pkg)));   // stable: ties keep order
+        List<Entry> fill = byUse.subList(0, Math.min(free, byUse.size()));
+        rest.removeAll(fill);
+        fresh.subList(docked, fresh.size()).clear();
+        fresh.addAll(fill);
+        fresh.addAll(rest);
     }
 
     /** When the app was first installed (epoch ms), 0 if unknown; cached for the adapter's life. */

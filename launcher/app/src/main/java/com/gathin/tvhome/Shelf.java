@@ -62,6 +62,14 @@ final class Shelf {
     private int appsCount;
     private String appsOrder = Config.GRID_FREQUENT;
     private LinearLayout appsRow;
+    private String pickOrder;
+    private final Runnable pickOnRest = this::pickRested;
+
+    private void pickRested() {
+        if (pickOrder != null && !pickOrder.equals(appsOrder) && appsRow != null && appsRow.hasFocus()) {
+            listener.onAppsOrder(pickOrder);
+        }
+    }
     private static final String[] ORDERS = {Config.GRID_ALPHABETICAL, Config.GRID_INSTALLED, Config.GRID_FREQUENT};
     private static final int[] ORDER_NAMES = {R.string.sort_name, R.string.sort_added, R.string.sort_used};
     private RecyclerView list;
@@ -279,6 +287,14 @@ final class Shelf {
             chip.setFocusable(true);
             chip.setSelected(ORDERS[i].equals(appsOrder));
             chip.setOnClickListener(v -> listener.onAppsOrder(ORDERS[index]));
+            // Like the Discover tabs: resting on a chip picks it (after a moment, so sweeping across them does not
+            // re-sort the grid at every step).
+            chip.setOnFocusChangeListener((v, has) -> {
+                v.removeCallbacks(pickOnRest);
+                if (!has || ORDERS[index].equals(appsOrder)) return;
+                pickOrder = ORDERS[index];
+                v.postDelayed(pickOnRest, 350);
+            });
             chip.setOnKeyListener((v, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
                 switch (keyCode) {

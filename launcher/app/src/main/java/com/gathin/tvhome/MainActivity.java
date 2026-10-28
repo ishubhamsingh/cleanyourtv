@@ -2433,8 +2433,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             getSharedPreferences("dashboard", MODE_PRIVATE).edit().putString("grid_order", order).apply();
             adapter.setGridOrder(order);
             reloadApps(false);
-            // reloadApps puts focus back on the last tile; the pick keeps it on the chips.
-            grid.postDelayed(shelf::focusAppsChip, 150);
+            // reloadApps puts focus back on the last tile; the pick keeps it on the chips. The rebind keeps tiles
+            // attached, so the dock's fade (Discover has focus) is set again for each place.
+            grid.postDelayed(() -> {
+                shelf.focusAppsChip();
+                dimOthers();
+            }, 150);
         }
 
         @Override
