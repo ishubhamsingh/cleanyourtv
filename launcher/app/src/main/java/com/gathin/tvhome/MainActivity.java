@@ -188,6 +188,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private NowPlaying nowPlaying;
     private View nowPlayingCard;
     private TextView btnMusic;
+    /** config dashboard: the card row above the dock; null when off. */
+    private Dashboard dashboard;
     private EqualizerDrawable equalizer;
     /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
     private int shelfReturnColumn;
@@ -643,6 +645,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
             // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
             if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
+            // The dashboard's cards fill the space above: the dock sits right under them.
+            if (dashboard != null) want = (int) (AppAdapter.TOP_ROOM_DP * density);
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
@@ -727,6 +731,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSearch = findViewById(R.id.btnSearch);
         nowPlayingCard = findViewById(R.id.nowPlaying);
         btnMusic = findViewById(R.id.btnMusic);
+        if (cfg.dashboard) dashboard = Dashboard.attach(this, grid, new Dashboard.Host() {
+            @Override
+            public void focusTopBar() {
+                firstTopButton().requestFocus();
+            }
+
+            @Override
+            public void focusDock() {
+                focusTile(singleRow || lastFocused < COLUMNS ? lastFocused : 0);
+            }
+        });
         if (cfg.nowPlaying) setUpNowPlaying();
         if (discoverOn) {
             btnSearch.setVisibility(View.VISIBLE);
@@ -809,8 +824,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                // Back to the dock tile Up came from, not wherever the focus finder lands.
-                focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
+                // The dashboard's cards first; else back to the dock tile Up came from, not wherever the focus finder
+                // lands.
+                if (dashboard == null || !dashboard.focus()) focusTile(singleRow ? lastFocused : lastFocused % COLUMNS);
                 return true;
             }
             int firstButton = btnMusic.getVisibility() == View.VISIBLE ? R.id.btnMusic
@@ -956,6 +972,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         stopped = false;
         started = true;
         if (nowPlaying != null) nowPlaying.start();
+        if (dashboard != null) dashboard.start();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1207,6 +1224,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onStop();
         started = false;
         if (nowPlaying != null) nowPlaying.stop();
+        if (dashboard != null) dashboard.stop();
         handler.removeCallbacks(progressTick);
         if (equalizer != null) equalizer.stop();
         closeNowPlaying(false);
@@ -2142,6 +2160,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void showTrack(NowPlaying.Track t) {
+        if (dashboard != null) {   // the Now playing card in the row replaces the music button and its overlay
+            dashboard.showTrack(t, nowPlaying);
+            return;
+        }
         track = t;
         handler.removeCallbacks(progressTick);
         if (t == null) {
@@ -2676,6 +2698,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public boolean onTileVerticalKey(int position, int keyCode) {
+        // Up from the dock: the dashboard's cards sit between it and the top bar.
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && dashboard != null && (singleRow || position < COLUMNS)
+                && dashboard.focus()) return true;
         int count = adapter.appCount();
         int target;
         if (singleRow) {

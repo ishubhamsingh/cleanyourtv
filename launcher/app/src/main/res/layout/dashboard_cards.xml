@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dashboard (config dashboard): the row of cards between the top bar and the dock. Now playing (art, app, title,
+     artist, progress with times; OK reaches previous / play-pause / next, hold OK opens the app) and System
+     (download speed over the last minute, Wi-Fi band, uptime, memory, storage). See Dashboard.java. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dashCards"
+    android:layout_width="match_parent"
+    android:layout_height="156dp"
+    android:layout_marginTop="14dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:orientation="horizontal"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:id="@+id/dashNow"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.45"
+        android:padding="14dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="@drawable/dash_card_bg"
+        android:focusable="true"
+        android:clickable="true"
+        android:longClickable="true">
+
+        <ImageView
+            android:id="@+id/dashArt"
+            android:layout_width="124dp"
+            android:layout_height="124dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/dashApp"
+                style="@style/DashSmall"
+                android:drawableStart="@drawable/dash_dot"
+                android:drawablePadding="6dp"
+                android:gravity="center_vertical" />
+
+            <TextView
+                android:id="@+id/dashTitle"
+                style="@style/DashSmall"
+                android:layout_marginTop="5dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="18sp"
+                android:fontFamily="@string/font_medium" />
+
+            <TextView
+                android:id="@+id/dashArtist"
+                style="@style/DashSmall"
+                android:layout_marginTop="3dp"
+                android:textSize="13sp" />
+
+            <ProgressBar
+                android:id="@+id/dashProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginTop="9dp"
+                android:max="1000"
+                android:progressDrawable="@drawable/np_progress" />
+
+            <LinearLayout
+                android:id="@+id/dashTimes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp">
+
+                <TextView android:id="@+id/dashPos" style="@style/DashMono" android:layout_width="0dp" android:layout_weight="1" />
+                <TextView android:id="@+id/dashDur" style="@style/DashMono" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dashControls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:clipChildren="false">
+
+                <TextView android:id="@+id/dashPrev" style="@style/DashControl" android:drawableStart="@drawable/ic_skip_previous" android:contentDescription="@null" />
+                <TextView android:id="@+id/dashPlay" style="@style/DashControl" android:drawableStart="@drawable/ic_pause" android:contentDescription="@null" />
+                <TextView android:id="@+id/dashNext" style="@style/DashControl" android:drawableStart="@drawable/ic_skip_next" android:contentDescription="@null" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/dashSystem"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="16dp"
+        android:padding="14dp"
+        android:orientation="vertical"
+        android:background="@drawable/dash_card_bg"
+        android:focusable="true"
+        android:clickable="true">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView style="@style/DashSmall" android:layout_width="0dp" android:layout_weight="1" android:text="@string/dash_system" android:textColor="#E6FFFFFF" />
+            <TextView android:id="@+id/dashUp" style="@style/DashMono" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/dashNet" style="@style/DashSmall" android:layout_marginTop="8dp" android:textSize="12sp" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="30dp" android:gravity="center_vertical">
+            <TextView android:id="@+id/dashRate" style="@style/DashMono" android:textColor="#FFFFFFFF" android:textSize="19sp" />
+            <com.gathin.tvhome.SparklineView android:id="@+id/dashSpark" android:layout_width="0dp" android:layout_height="26dp" android:layout_weight="1" android:layout_marginStart="12dp" />
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
+            <TextView style="@style/DashSmall" android:layout_width="0dp" android:layout_weight="1" android:textSize="12sp" android:text="@string/dash_memory" />
+            <TextView android:id="@+id/dashMem" style="@style/DashMono" />
+        </LinearLayout>
+        <ProgressBar android:id="@+id/dashMemBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_marginTop="3dp" android:max="1000" android:progressDrawable="@drawable/np_progress" />
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp">
+            <TextView style="@style/DashSmall" android:layout_width="0dp" android:layout_weight="1" android:textSize="12sp" android:text="@string/dash_storage" />
+            <TextView android:id="@+id/dashDisk" style="@style/DashMono" />
+        </LinearLayout>
+        <ProgressBar android:id="@+id/dashDiskBar" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_marginTop="3dp" android:max="1000" android:progressDrawable="@drawable/np_progress" />
+    </LinearLayout>
+</LinearLayout>

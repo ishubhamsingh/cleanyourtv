@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dashboard card: the Now playing card's frosted glass, with a white outline while focused. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="#40FFFFFF" android:endColor="#24FFFFFF" />
+            <stroke android:width="2dp" android:color="#FFFFFFFF" />
+            <corners android:radius="22dp" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/np_card_bg" />
+</selector>

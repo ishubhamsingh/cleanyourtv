@@ -252,6 +252,8 @@ final class Config {
     final boolean discover;
     /** The top bar's card with the media playing in the background, and its controls (config.xml, now_playing). */
     final boolean nowPlaying;
+    /** A row of cards (Now playing, System) between the top bar and the dock (config.xml, dashboard). */
+    final boolean dashboard;
     static final String GRID_ALPHABETICAL = "alphabetical", GRID_RECENT = "recent", GRID_FREQUENT = "frequent";
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
@@ -267,12 +269,13 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying, boolean dashboard) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.gridOrder = gridOrder(gridOrder);
         this.discover = discover;
         this.nowPlaying = nowPlaying;
+        this.dashboard = dashboard;
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.keyFilter = keyFilter;
@@ -447,6 +450,7 @@ final class Config {
         String gridOrder = res.getString(R.string.grid_order).trim();
         boolean discover = res.getBoolean(R.bool.discover);
         boolean nowPlaying = res.getBoolean(R.bool.now_playing);
+        boolean dashboard = res.getBoolean(R.bool.dashboard);
         String vpn = res.getString(R.string.vpn_app).trim();
         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
         boolean showStats = res.getBoolean(R.bool.show_stats);
@@ -549,6 +553,7 @@ final class Config {
             gridOrder = string(json, "grid_order", gridOrder);
             discover = bool(json, "discover", discover);
             nowPlaying = bool(json, "now_playing", nowPlaying);
+            dashboard = bool(json, "dashboard", dashboard);
             vpn = string(json, "vpn_app", vpn);
             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
             showStats = bool(json, "show_stats", showStats);
@@ -643,6 +648,12 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
+        if (dashboard) {
+            // The cards take the top shelf's place: no app name or artwork above the dock, no stats line.
+            cinematic = false;
+            dockTitle = false;
+            showStats = false;
+        }
         return new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService, panelAction, panelExtra, coocaaSources, inputAction, inputUriScheme, Math.max(1, columns),
                 Math.max(0, rowsBelow), animations, advancedEffects, shamsi, greetingName, moduleCards, reducedMotion, bootToLiveTv,
@@ -656,7 +667,7 @@ final class Config {
                 dockBand, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough,
                 consumeVolumeKeys, powerOnHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
-                dateBelowClock, gridOrder, discover, nowPlaying);
+                dateBelowClock, gridOrder, discover, nowPlaying, dashboard);
     }
 
     /**

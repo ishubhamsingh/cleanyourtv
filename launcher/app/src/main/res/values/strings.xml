@@ -169,4 +169,12 @@
     <string name="now_playing_next">Next</string>
     <string name="now_playing_dismiss">Dismiss</string>
     <string name="now_playing">Now playing</string>
+    <string name="dash_system">System</string>
+    <string name="dash_memory">Memory</string>
+    <string name="dash_storage">Storage</string>
+    <string name="dash_up">Up %s</string>
+    <string name="dash_download">Download</string>
+    <string name="dash_ethernet">Ethernet</string>
+    <string name="dash_nothing">Nothing playing</string>
+    <string name="dash_ok_opens">OK opens %s</string>
 </resources>

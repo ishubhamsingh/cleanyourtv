@@ -165,4 +165,12 @@
     <string name="now_playing_next">הבא</string>
     <string name="now_playing_dismiss">הסתרה</string>
     <string name="now_playing">מתנגן עכשיו</string>
+    <string name="dash_system">מערכת</string>
+    <string name="dash_memory">זיכרון</string>
+    <string name="dash_storage">אחסון</string>
+    <string name="dash_up">פועל %s</string>
+    <string name="dash_download">הורדה</string>
+    <string name="dash_ethernet">אתרנט</string>
+    <string name="dash_nothing">שום דבר לא מתנגן</string>
+    <string name="dash_ok_opens">OK פותח את %s</string>
 </resources>

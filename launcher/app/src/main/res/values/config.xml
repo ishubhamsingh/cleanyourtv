@@ -339,6 +339,12 @@
          It reads only the media sessions, never the notifications. Off by default; a theme can set "now_playing": true. -->
     <bool name="now_playing">true</bool>
 
+    <!-- A row of cards between the top bar and the dock: Now playing (art, title, progress with times; OK reaches the
+         playback buttons) and System (download speed over the last minute, Wi-Fi band, uptime, memory, storage). It
+         takes the top shelf's place, so the app name and artwork above the dock and the stats line go. Off by default;
+         a theme can set "dashboard": true. -->
+    <bool name="dashboard">false</bool>
+
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
     <integer name="rows_below_dock">0</integer>
