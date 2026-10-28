@@ -1,0 +1,21 @@
+{
+  "background_color": "#090C14",
+  "cinematic_home": true,
+  "dock_glass": true,
+  "icon_only_buttons": true,
+  "app_glow": false,
+  "glow_style": "horizon",
+  "focus_overshoot": false,
+  "advanced_effects": true,
+  "show_stats": true,
+  "home_idle_clock_minutes": 3,
+  "settings_key_panel": true,
+  "show_network_pill": false,
+  "icon_only_inputs": true,
+  "columns": 6,
+  "dashboard": true,
+  "glass_style": "outline",
+  "wallpaper": false,
+  "aurora_background": true,
+  "ambient_glow": false
+}

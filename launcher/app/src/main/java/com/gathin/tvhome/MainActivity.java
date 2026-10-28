@@ -190,6 +190,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView btnMusic;
     /** config dashboard: the card row above the dock; null when off. */
     private Dashboard dashboard;
+    /** config aurora_background: the drifting colour backdrop; null when off. */
+    private AuroraView aurora;
     private EqualizerDrawable equalizer;
     /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
     private int shelfReturnColumn;
@@ -442,6 +444,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // black under it is a second full-screen fill on every frame for nothing. The starting window still uses
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
+        if (cfg.auroraBackground) {
+            aurora = new AuroraView(this, cfg.reducedMotion || !cfg.animations);
+            root.addView(aurora, 0, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+        }
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
@@ -992,6 +999,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         started = true;
         if (nowPlaying != null) nowPlaying.start();
         if (dashboard != null) dashboard.start();
+        if (aurora != null) aurora.start();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1244,6 +1252,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         started = false;
         if (nowPlaying != null) nowPlaying.stop();
         if (dashboard != null) dashboard.stop();
+        if (aurora != null) aurora.stop();
         handler.removeCallbacks(progressTick);
         if (equalizer != null) equalizer.stop();
         closeNowPlaying(false);
@@ -2185,6 +2194,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void showTrack(NowPlaying.Track t) {
+        if (aurora != null) aurora.setArt(t == null ? null : t.art);
         if (dashboard != null) {   // the Now playing card in the row replaces the music button and its overlay
             dashboard.showTrack(t, nowPlaying);
             return;

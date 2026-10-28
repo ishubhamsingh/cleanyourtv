@@ -345,6 +345,12 @@
          a theme can set "dashboard": true. -->
     <bool name="dashboard">false</bool>
 
+    <!-- The backdrop as a few large soft clouds of colour drifting slowly, like Apple Music's player, in the playing
+         track's artwork colours (wine, plum and amber otherwise). Drawn behind everything, so pair it with
+         "wallpaper": false. Redrawn about 30 times a second only while Home is on screen; still with reduced motion.
+         Off by default; a theme can set "aurora_background": true. -->
+    <bool name="aurora_background">false</bool>
+
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
     <integer name="rows_below_dock">0</integer>
