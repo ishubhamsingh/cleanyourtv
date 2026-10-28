@@ -162,12 +162,37 @@ final class Dashboard {
         column.addView(row, column.indexOfChild(gridFrame));
         // The top bar's chips for the playing track and the weather while the cards are folded away: they only show.
         ViewGroup buttons = activity.findViewById(R.id.topButtons);
-        TextView chip = topChip(activity), weatherChip = topChip(activity);
-        float d = activity.getResources().getDisplayMetrics().density;
-        weatherChip.setMaxWidth(Math.round(200 * d));
-        buttons.addView(weatherChip, 0, weatherChip.getLayoutParams());
+        TextView chip = topChip(activity);
         buttons.addView(chip, 0, chip.getLayoutParams());
+        TextView weatherChip = compactHeader(activity);
         return new Dashboard(activity, row, chip, weatherChip, host);
+    }
+
+    /**
+     * The mock's calmer header: the date in sentence case without the wide tracking, and under it a line for the
+     * weather while the cards are folded away (the weather card's place). Returns that line.
+     */
+    private static TextView compactHeader(Activity activity) {
+        float d = activity.getResources().getDisplayMetrics().density;
+        android.widget.TextClock date = activity.findViewById(R.id.date);
+        date.setAllCaps(false);
+        date.setLetterSpacing(0.02f);
+        date.setTextSize(17);
+        date.setTextColor(0xD9FFFFFF);
+        TextView greeting = activity.findViewById(R.id.greeting);
+        greeting.setLetterSpacing(0.16f);
+        TextView line = new TextView(activity);
+        line.setSingleLine(true);
+        line.setTextSize(14);
+        line.setTextColor(0xA6FFFFFF);
+        line.setIncludeFontPadding(false);
+        line.setVisibility(View.GONE);
+        ViewGroup column = (ViewGroup) date.getParent();
+        ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Math.round(5 * d);
+        column.addView(line, column.indexOfChild(date) + 1, lp);
+        return line;
     }
 
     private static TextView topChip(Activity activity) {
@@ -556,8 +581,8 @@ final class Dashboard {
         }
         int code = w.optInt("code");
         boolean day = w.optBoolean("day", true);
-        // Symbol and temperature only: beside the track's chip, a word more would push the date off the top bar.
-        weatherChip.setText(WeatherText.symbol(code, day) + "  " + WeatherText.degrees(w.optDouble("temp")));
+        weatherChip.setText(WeatherText.symbol(code, day) + "  " + WeatherText.degrees(w.optDouble("temp")) + "  \u00B7  "
+                + WeatherText.word(code) + "  \u00B7  " + w.optString("place", ""));
         showChip();
         icon.setText(WeatherText.symbol(code, day));
         temp.setText(WeatherText.degrees(w.optDouble("temp")));
