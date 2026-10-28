@@ -256,6 +256,8 @@ final class Config {
     final boolean dashboard;
     /** The backdrop as slowly drifting clouds of colour from the playing track's artwork (config.xml, aurora_background). */
     final boolean auroraBackground;
+    /** Remote scancodes that open Settings (config.xml settings_key_scancodes, or a theme / TV profile). */
+    final int[] settingsKeyScancodes;
     static final String GRID_ALPHABETICAL = "alphabetical", GRID_RECENT = "recent", GRID_FREQUENT = "frequent",
             GRID_INSTALLED = "installed";
 
@@ -272,7 +274,7 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying, boolean dashboard, boolean auroraBackground) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying, boolean dashboard, boolean auroraBackground, int[] settingsKeyScancodes) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.gridOrder = gridOrder(gridOrder);
@@ -280,6 +282,7 @@ final class Config {
         this.nowPlaying = nowPlaying;
         this.dashboard = dashboard;
         this.auroraBackground = auroraBackground;
+        this.settingsKeyScancodes = settingsKeyScancodes;
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.keyFilter = keyFilter;
@@ -468,6 +471,7 @@ final class Config {
         int background = 0xFF000000;
         int skyIntensity = res.getInteger(R.integer.sky_intensity);
         int[] settingsKeycodes = res.getIntArray(R.array.settings_key_keycodes);
+        int[] settingsScancodes = res.getIntArray(R.array.settings_key_scancodes);
         boolean settingsKeyPanel = res.getBoolean(R.bool.settings_key_panel);
         boolean restoreKeyServices = res.getBoolean(R.bool.restore_key_services);
         int[] inputKeycodes = res.getIntArray(R.array.input_key_keycodes);
@@ -572,6 +576,7 @@ final class Config {
             background = color(json, "background_color", background);
             skyIntensity = integer(json, "sky_intensity", skyIntensity, 0, 100);
             settingsKeycodes = intArray(json, "settings_key_keycodes", settingsKeycodes);
+            settingsScancodes = intArray(json, "settings_key_scancodes", settingsScancodes);
             settingsKeyPanel = bool(json, "settings_key_panel", settingsKeyPanel);
             restoreKeyServices = bool(json, "restore_key_services", restoreKeyServices);
             inputKeycodes = intArray(json, "input_key_keycodes", inputKeycodes);
@@ -675,7 +680,7 @@ final class Config {
                 dockBand, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough,
                 consumeVolumeKeys, powerOnHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
-                dateBelowClock, gridOrder, discover, nowPlaying, dashboard, aurora);
+                dateBelowClock, gridOrder, discover, nowPlaying, dashboard, aurora, settingsScancodes);
     }
 
     /**

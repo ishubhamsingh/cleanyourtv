@@ -20,7 +20,7 @@
         <item>com.netflix.ninja</item>
         <item>com.google.android.youtube.tv</item>
         <item>in.startv.hotstar</item>
-        <item>com.apple.atve.sony.appletv</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
     </string-array>
     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
@@ -34,7 +34,7 @@
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false"></string>
+    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
 
     <!-- Open the Live TV app above the first time Home comes up after the TV is switched on, for sets that are
          mostly used for broadcast TV. Once per boot: Home after that stays Home. Can also be set with
@@ -137,7 +137,6 @@
          evdev MSC_SCAN there, which is not always the scanCode the framework reports, so a number that takes
          nothing is no proof the press never arrived. Leave empty to omit. -->
     <integer-array name="settings_key_scancodes">
-        <item>646</item>   <!-- Sony BRAVIA AE2 remote: gear button (KEY_CLEARVU_SONAR, HID 0x0c0586) -->
     </integer-array>
     <!-- The same by Android keycode, for buttons whose scancode is shared. TCL Google TV remotes send their
          Settings button as keycode 83 (KEYCODE_NOTIFICATION, which the stock Google TV home turned into its quick
@@ -191,14 +190,6 @@
          still opens on a tap; "hold:scan:490:..." works for scancodes. A key with only a hold entry does nothing
          on a tap. A listed app that is not installed leaves the button doing nothing. Leave empty to omit. -->
     <string-array name="app_keys" translatable="false">
-        <!-- Sony BRAVIA 4K AE2 remote (India): its six app keys, by scancode. Sony's system service hands them to the
-             Google TV home, which is disabled here, so the key helper opens the apps itself. -->
-        <item>scan:496:com.sonypicturescore</item>          <!-- Sony Pictures Core (BRAVIA CORE) -->
-        <item>scan:583:com.netflix.ninja</item>             <!-- Netflix -->
-        <item>scan:485:com.google.android.youtube.tv</item> <!-- YouTube -->
-        <item>scan:490:com.amazon.amazonvideo.livingroom</item> <!-- Prime Video -->
-        <item>scan:507:com.crunchyroll.crunchyroid</item>   <!-- Crunchyroll -->
-        <item>scan:509:com.sonyliv</item>                   <!-- SonyLIV -->
     </string-array>
 
     <!-- Package of the stock launcher, for TVs whose firmware turns it back on after it was disabled. XGIMI's

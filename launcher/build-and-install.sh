@@ -21,6 +21,15 @@ if [ -n "$MIN_SDK" ] && [ -n "$TV_SDK" ] && [ "$TV_SDK" -lt "$MIN_SDK" ]; then
   echo "half would need your own build with a lower minSdk (docs/TROUBLESHOOTING.md)." >&2
   exit 1
 fi
+# The dashboard, Discover and the aurora background are made for TVs with 2 GB or more: say so on smaller ones
+# (a warning, not a stop; the plain themes still suit them).
+TV_MEM_KB=$("$PY" -I "$TOOLS/tv.py" 'grep MemTotal /proc/meminfo' 2>/dev/null | tr -dc '0-9' || true)
+if [ -n "$TV_MEM_KB" ] && [ "$TV_MEM_KB" -lt 1000000 ]; then
+  echo "WARNING: this TV has $((TV_MEM_KB / 1024)) MB of memory. The dashboard, Discover and the aurora background" >&2
+  echo "are too heavy for it: use a plain theme (themes/glass) and leave Discover out." >&2
+elif [ -n "$TV_MEM_KB" ] && [ "$TV_MEM_KB" -lt 2000000 ]; then
+  echo "Note: $((TV_MEM_KB / 1024)) MB of memory. Prefer themes/my-glass to the animated my-aurora." >&2
+fi
 # macOS: java_home or Homebrew; Linux: the java on PATH.
 # `/usr/libexec/java_home -v 17` means "17 or newer", so on a Mac whose only JDK is newer it prints
 # that one and exits 0, and the Homebrew fallback below never runs. Gradle 8.9 then stops with

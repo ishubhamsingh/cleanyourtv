@@ -1,0 +1,14 @@
+{
+  "_comment": "Sony BRAVIA 4K AE2 (India, Google TV 14). Lay it over a theme: tools/theme.sh themes/my-glass profiles/sony-bravia-ae2-in",
+  "dock_apps": ["com.netflix.ninja", "com.google.android.youtube.tv", "in.startv.hotstar", "com.apple.atve.sony.appletv"],
+  "live_tv_package": "",
+  "settings_key_scancodes": [646],
+  "app_keys": [
+    "scan:496:com.sonypicturescore",
+    "scan:583:com.netflix.ninja",
+    "scan:485:com.google.android.youtube.tv",
+    "scan:490:com.amazon.amazonvideo.livingroom",
+    "scan:507:com.crunchyroll.crunchyroid",
+    "scan:509:com.sonyliv"
+  ]
+}

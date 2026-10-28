@@ -175,6 +175,7 @@ public class HomeKeyService extends AccessibilityService {
         repairRecord = config.restoreKeyServices;
         if (repairRecord) ServiceRepair.connected(this, getClass());
         settingsKeycodes = config.settingsKeycodes;
+        settingsScancodes = config.settingsKeyScancodes;
         settingsPanel = config.settingsKeyPanel;
         consumeVolumeKeys = config.consumeVolumeKeys;
         appKeys = RemoteKeys.parseAppKeys(config.appKeys);

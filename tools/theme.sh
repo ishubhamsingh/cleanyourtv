@@ -4,6 +4,8 @@
 # directory and overlays config.json on its built-in config.xml; see themes/README.md for the keys.
 #
 # Usage: TV_HOST=192.168.1.50 tools/theme.sh themes/aurora
+#        TV_HOST=192.168.1.50 tools/theme.sh themes/my-glass profiles/sony-bravia-ae2-in
+#                                              # a theme with a TV profile's config.json laid over it (its keys win)
 #        TV_HOST=192.168.1.50 tools/theme.sh --reset        # remove the overlay, back to config.xml
 set -euo pipefail
 # Resolve the theme folder against the caller's directory before moving into tools/.
@@ -12,6 +14,11 @@ set -euo pipefail
 # could not open it and called the file "not valid JSON". A folder that does not exist keeps the path as typed,
 # so the "no config.json" message names what the caller gave.
 THEME_ARG="${1:-}"
+PROFILE_ARG="${2:-}"
+case "$PROFILE_ARG" in
+  ""|/*) ;;
+  *) PROFILE_ARG="$(pwd -W 2>/dev/null || pwd)/$PROFILE_ARG" ;;
+esac
 case "$THEME_ARG" in
   --reset|"") ;;
   /*) THEME_ARG="$(cd "$THEME_ARG" 2>/dev/null && { pwd -W 2>/dev/null || pwd; } || printf '%s' "$THEME_ARG")" ;;
@@ -75,8 +82,21 @@ THEME="${THEME_ARG:?usage: theme.sh <theme folder> | --reset}"
 "$PY" -I -c 'import json,sys; json.load(open(sys.argv[1], encoding="utf-8-sig"))' "$THEME/config.json" 2>/dev/null \
   || { echo "$THEME/config.json is not valid JSON" >&2; exit 1; }
 
+CONFIG="$THEME/config.json"
+if [ -n "$PROFILE_ARG" ]; then
+  # A TV profile (dock, remote keys, Live TV app) over the theme: one config.json, the profile's keys winning.
+  [ -f "$PROFILE_ARG/config.json" ] || { echo "no config.json in $PROFILE_ARG" >&2; exit 1; }
+  CONFIG="$(mktemp)"
+  trap 'rm -f "$CONFIG"' EXIT
+  "$PY" -I -c 'import json,sys
+t = json.load(open(sys.argv[1], encoding="utf-8-sig")); p = json.load(open(sys.argv[2], encoding="utf-8-sig"))
+p.pop("_comment", None); t.update(p); json.dump(t, open(sys.argv[3], "w", encoding="utf-8"), indent=2)' \
+    "$THEME/config.json" "$PROFILE_ARG/config.json" "$CONFIG" \
+    || { echo "$PROFILE_ARG/config.json is not valid JSON" >&2; exit 1; }
+fi
+
 tv "mkdir -p $DIR" >/dev/null 2>&1 || true
-tv --push "$THEME/config.json" "$TMP-config.json" >/dev/null
+tv --push "$CONFIG" "$TMP-config.json" >/dev/null
 tv "$(put config.json)"
 if [ -f "$THEME/wallpaper.jpg" ]; then
   "$PY" -I b64push.py "$THEME/wallpaper.jpg" "$TMP-wallpaper.jpg"
@@ -106,4 +126,4 @@ else
 fi
 tv "printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
 tv "$RESTART; echo applied" | tail -n 1
-echo "Theme $(basename "$THEME") is on the TV. Undo with: tools/theme.sh --reset"
+echo "Theme $(basename "$THEME")${PROFILE_ARG:+ with profile $(basename "$PROFILE_ARG")} is on the TV. Undo with: tools/theme.sh --reset"
