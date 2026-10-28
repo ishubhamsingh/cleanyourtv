@@ -182,4 +182,10 @@
     <string name="dash_vs_week">%1$s vs last week</string>
     <string name="dash_usage_off">Usage access is off</string>
     <string name="dash_usage_hint">Allow it once over ADB, see FORK.md</string>
+    <string name="badge_new">New</string>
+    <string name="all_apps">All apps</string>
+    <string name="all_apps_count">%1$d installed</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_added">Recently added</string>
+    <string name="sort_used">Most used</string>
 </resources>

@@ -43,6 +43,10 @@ final class Shelf {
         void onPosterLongPress(Discover.Item item, View poster);
         /** Up from the tabs (up = true) or Down from the posters. */
         void onShelfExit(boolean up);
+
+        /** Dashboard: the All apps chips picked an order (Config.GRID_*). */
+        default void onAppsOrder(String order) {
+        }
     }
 
     private final Context ctx;
@@ -54,6 +58,12 @@ final class Shelf {
     /** The row (tab) shown, by id, kept while the rows refresh. */
     private String selected;
     private LinearLayout block, rowView, tabs;
+    /** Dashboard: the All apps line under the posters ("All apps · 20 installed", then the order chips); off when 0. */
+    private int appsCount;
+    private String appsOrder = Config.GRID_FREQUENT;
+    private LinearLayout appsRow;
+    private static final String[] ORDERS = {Config.GRID_ALPHABETICAL, Config.GRID_INSTALLED, Config.GRID_FREQUENT};
+    private static final int[] ORDER_NAMES = {R.string.sort_name, R.string.sort_added, R.string.sort_used};
     private RecyclerView list;
     private PosterAdapter adapter;
     private int tileW, tileH, cellW;
@@ -212,7 +222,7 @@ final class Shelf {
                     return true;
                 }
                 if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    listener.onShelfExit(false);
+                    if (!focusAppsChip()) listener.onShelfExit(false);
                     return true;
                 }
                 // The row's ends: nothing past them (the default focus search would leave the row).
@@ -225,7 +235,87 @@ final class Shelf {
                 PosterAdapter.itemHeight(tileH, d)));
         rowView.addView(list);
         block.addView(rowView);
+        addAppsRow(d);
         show(current);
+    }
+
+    /** Dashboard: shows the All apps line with {@code count} apps and {@code order} picked; 0 hides it. */
+    void setApps(int count, String order) {
+        boolean changed = count != appsCount || !order.equals(appsOrder);
+        appsCount = count;
+        appsOrder = order;
+        if (changed && block != null && !rows.isEmpty()) {
+            View focused = appsRow == null ? null : appsRow.findFocus();
+            int chip = focused == null ? -1 : appsRow.indexOfChild(focused) - 1;
+            if (appsRow != null) block.removeView(appsRow);
+            addAppsRow(ctx.getResources().getDisplayMetrics().density);
+            if (chip >= 0 && appsRow != null) appsRow.getChildAt(chip + 1).requestFocus();
+        }
+    }
+
+    @android.annotation.SuppressLint("ResourceType")   // pill_text is a colour selector kept in drawable/
+    private void addAppsRow(float d) {
+        appsRow = null;
+        if (appsCount <= 0) return;
+        appsRow = new LinearLayout(ctx);
+        appsRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        appsRow.setClipChildren(false);
+        android.widget.TextView title = new android.widget.TextView(ctx);
+        title.setText(ctx.getString(R.string.all_apps) + "  \u00B7  " + ctx.getString(R.string.all_apps_count, appsCount));
+        title.setTextColor(0xE6FFFFFF);
+        title.setTextSize(17);
+        title.setTypeface(android.graphics.Typeface.create(ctx.getString(R.string.font_medium), android.graphics.Typeface.NORMAL));
+        appsRow.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        boolean rtl = ctx.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+        for (int i = 0; i < ORDERS.length; i++) {
+            final int index = i;
+            android.widget.TextView chip = new android.widget.TextView(ctx);
+            chip.setText(ORDER_NAMES[i]);
+            chip.setTextSize(14);
+            chip.setTextColor(ctx.getColorStateList(R.drawable.pill_text));
+            chip.setBackgroundResource(R.drawable.chip_bg);
+            chip.setGravity(android.view.Gravity.CENTER);
+            chip.setPadding(Math.round(14 * d), 0, Math.round(14 * d), 0);
+            chip.setFocusable(true);
+            chip.setSelected(ORDERS[i].equals(appsOrder));
+            chip.setOnClickListener(v -> listener.onAppsOrder(ORDERS[index]));
+            chip.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                switch (keyCode) {
+                    case KeyEvent.KEYCODE_DPAD_UP:
+                        focusPosters();
+                        return true;
+                    case KeyEvent.KEYCODE_DPAD_DOWN:
+                        listener.onShelfExit(false);
+                        return true;
+                    case KeyEvent.KEYCODE_DPAD_LEFT:
+                    case KeyEvent.KEYCODE_DPAD_RIGHT:
+                        int to = index + ((keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) != rtl ? 1 : -1);
+                        if (to >= 0 && to < ORDERS.length) appsRow.getChildAt(to + 1).requestFocus();
+                        return true;
+                    default:
+                        return false;
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(36 * d));
+            lp.setMarginStart(Math.round(8 * d));
+            appsRow.addView(chip, lp);
+        }
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Math.round(22 * d);
+        lp.setMarginStart(Math.round(10 * d));
+        lp.setMarginEnd(Math.round(10 * d));
+        block.addView(appsRow, lp);
+    }
+
+    /** Down from the posters, or after a pick: the order in use among the All apps chips, if they show. */
+    boolean focusAppsChip() {
+        if (appsRow == null) return false;
+        for (int i = 0; i < ORDERS.length; i++) {
+            if (ORDERS[i].equals(appsOrder)) return appsRow.getChildAt(i + 1).requestFocus();
+        }
+        return appsRow.getChildAt(1).requestFocus();
     }
 
     /** Shows a tab's posters, scrolled to where that tab was left. */

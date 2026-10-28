@@ -178,4 +178,10 @@
     <string name="dash_vs_week">%1$s לעומת שבוע שעבר</string>
     <string name="dash_usage_off">גישה לנתוני שימוש כבויה</string>
     <string name="dash_usage_hint">יש לאפשר פעם אחת דרך ADB, ראו FORK.md</string>
+    <string name="badge_new">חדש</string>
+    <string name="all_apps">כל האפליקציות</string>
+    <string name="all_apps_count">%1$d מותקנות</string>
+    <string name="sort_name">שם</string>
+    <string name="sort_added">נוספו לאחרונה</string>
+    <string name="sort_used">בשימוש רב</string>
 </resources>

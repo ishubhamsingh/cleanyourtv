@@ -256,7 +256,8 @@ final class Config {
     final boolean dashboard;
     /** The backdrop as slowly drifting clouds of colour from the playing track's artwork (config.xml, aurora_background). */
     final boolean auroraBackground;
-    static final String GRID_ALPHABETICAL = "alphabetical", GRID_RECENT = "recent", GRID_FREQUENT = "frequent";
+    static final String GRID_ALPHABETICAL = "alphabetical", GRID_RECENT = "recent", GRID_FREQUENT = "frequent",
+            GRID_INSTALLED = "installed";
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, List<String> libraryApps, String liveTvPackage,
                    String liveTvAction, String liveTvInputId, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -382,7 +383,8 @@ final class Config {
 
     /** A known grid_order, or alphabetical (the default) for anything else. */
     static String gridOrder(String value) {
-        return GRID_RECENT.equals(value) || GRID_FREQUENT.equals(value) ? value : GRID_ALPHABETICAL;
+        return GRID_RECENT.equals(value) || GRID_FREQUENT.equals(value) || GRID_INSTALLED.equals(value) ? value
+                : GRID_ALPHABETICAL;
     }
 
     /** A known glow_style, or radial (the default) for anything else. */

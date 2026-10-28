@@ -191,7 +191,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** cinematic_home: only then does a launch record the last-opened app the shelf uses. */
     private final boolean cinematic;
     /** grid_order (Config.GRID_*): alphabetical, or recent / frequent from launches out of Home. */
-    private final String gridOrder;
+    private String gridOrder;
+    /** Dashboard: the grid's order can change at runtime (All apps chips), so every launch is recorded; and apps
+     *  installed in the last week get a "New" badge. */
+    private boolean dashboard;
+    private final java.util.Set<String> newApps = new java.util.HashSet<>();
+    private final Map<String, Long> installedAt = new HashMap<>();
     /** A launch since the last reload() may have changed a recent / frequent grid order. */
     private boolean usageChanged;
     /** Discover's rows under the dock (config discover), or null; shown when it has rows. */
@@ -335,6 +340,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return a.label.compareToIgnoreCase(b.label);
         });
         usageChanged = false;
+        newApps.clear();
+        if (dashboard) {
+            long week = System.currentTimeMillis() - 7L * 24 * 3600 * 1000;
+            for (Entry e : fresh) if (installedAt(e.pkg) > week) newApps.add(e.pkg);
+        }
         // Retain the optional Default-home tile until dependent tile-ordering work is merged.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
@@ -509,6 +519,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             // A free dock slot keeps its place in the row and the band, but shows nothing and takes no focus.
             h.card.setVisibility(View.INVISIBLE);
             h.card.setFocusable(false);
+            h.newBadge.setVisibility(View.GONE);
             h.name.setVisibility(View.INVISIBLE);
             h.banner.setImageDrawable(null);
             h.icon.setImageDrawable(null);
@@ -519,6 +530,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.card.setVisibility(View.VISIBLE);
         h.card.setFocusable(true);
         h.name.setText(e.name);
+        h.newBadge.setVisibility(newApps.contains(e.pkg) ? View.VISIBLE : View.GONE);
         // The dock has no labels, unless always_show_names asks for them (DockDecoration then makes room in the band).
         // In a single row every tile is the dock's kind: the big title above names it.
         boolean dockKind = dockRow && (singleRow || position < dockSize);
@@ -590,8 +602,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         try {
             ctx.startActivity(i);
-            if (cinematic || Config.GRID_RECENT.equals(gridOrder)) LastOpened.record(ctx, e.pkg);
-            if (Config.GRID_FREQUENT.equals(gridOrder)) Frecency.record(ctx, e.pkg);
+            if (dashboard || cinematic || Config.GRID_RECENT.equals(gridOrder)) LastOpened.record(ctx, e.pkg);
+            if (dashboard || Config.GRID_FREQUENT.equals(gridOrder)) Frecency.record(ctx, e.pkg);
             usageChanged = !Config.GRID_ALPHABETICAL.equals(gridOrder);
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
@@ -629,10 +641,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      * with apps Home never opened after them: cards, then alphabetical. A Move-saved order only places the dock here.
      */
     private void sortByUsage(List<Entry> fresh) {
-        boolean recent = Config.GRID_RECENT.equals(gridOrder);
+        boolean recent = Config.GRID_RECENT.equals(gridOrder), installed = Config.GRID_INSTALLED.equals(gridOrder);
         Map<String, Double> use = new HashMap<>();
         for (Entry e : fresh) {
-            use.put(e.pkg, recent ? (double) LastOpened.get(ctx, e.pkg) : Frecency.get(ctx, e.pkg));
+            use.put(e.pkg, installed ? (double) installedAt(e.pkg) : recent ? (double) LastOpened.get(ctx, e.pkg)
+                    : Frecency.get(ctx, e.pkg));
         }
         Collections.sort(fresh, (a, b) -> {
             boolean da = isDocked(a), db = isDocked(b);
@@ -648,6 +661,41 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (ca != cb) return ca ? -1 : 1;
             return a.label.compareToIgnoreCase(b.label);
         });
+    }
+
+    /** When the app was first installed (epoch ms), 0 if unknown; cached for the adapter's life. */
+    private long installedAt(String pkg) {
+        Long at = installedAt.get(pkg);
+        if (at == null) {
+            try {
+                at = ctx.getPackageManager().getPackageInfo(pkg, 0).firstInstallTime;
+            } catch (PackageManager.NameNotFoundException ex) {
+                at = 0L;
+            }
+            installedAt.put(pkg, at);
+        }
+        return at;
+    }
+
+    /** Dashboard on: record every launch (the chips can switch the order) and badge the week's new apps. */
+    void setDashboard(boolean on) {
+        dashboard = on;
+    }
+
+    String gridOrder() {
+        return gridOrder;
+    }
+
+    /** The All apps chips: a new order for the grid below the dock, from the next reload(). */
+    void setGridOrder(String order) {
+        gridOrder = order;
+    }
+
+    /** Apps in the grid (not the dock, cards or the shelf's slots). */
+    int gridAppCount() {
+        int n = 0;
+        for (Entry e : items) if (e.kind == Entry.APP || e.kind == Entry.CARD) n++;
+        return n;
     }
 
     /** True once after an app was opened under a recent / frequent grid_order: Home should rebuild on return. */
@@ -964,6 +1012,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final ImageView banner;
         final ImageView icon;
         final TextView label;
+        final TextView newBadge;
         final TextView name;
         final boolean animations;
         final boolean advancedEffects;
@@ -981,6 +1030,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             icon = v.findViewById(R.id.icon);
             label = v.findViewById(R.id.label);
             name = v.findViewById(R.id.name);
+            newBadge = v.findViewById(R.id.newBadge);
             this.animations = animations;
             this.advancedEffects = advancedEffects;
             this.reducedMotion = reducedMotion;

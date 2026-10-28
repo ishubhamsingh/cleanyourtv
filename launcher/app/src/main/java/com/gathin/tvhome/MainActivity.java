@@ -620,6 +620,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         }
         adapter = new AppAdapter(this, this, COLUMNS, cfg);
+        if (cfg.dashboard) {
+            // The All apps chips' last pick outlives a restart; until one, the theme's grid_order.
+            adapter.setDashboard(true);
+            adapter.setGridOrder(getSharedPreferences("dashboard", MODE_PRIVATE).getString("grid_order", cfg.gridOrder));
+        }
         discoverOn = cfg.discover && dockRow && !singleRow && Discover.get(this).available();
         if (discoverOn) {
             discover = Discover.get(this);
@@ -1205,6 +1210,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cards = moduleCards ? CardFeature.run(() -> Cards.discover(this, hiddenApps,
                 () -> Cards.load(Cards.storeFile(this)), leanback), none) : none;
         adapter.reload(cards.isEmpty() ? none : CardFeature.run(() -> Cards.shown(cards), none), leanback);
+        if (dashboard != null && shelf != null) shelf.setApps(adapter.gridAppCount(), adapter.gridOrder());
         lastFocusedKey = returnKey;
         lastFocused = returnSlot;
         packageSequence = currentPackageSequence(packageSequence);
@@ -2420,6 +2426,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onPosterLongPress(Discover.Item item, View poster) {
             showPosterMenu(item, poster);
+        }
+
+        @Override
+        public void onAppsOrder(String order) {
+            getSharedPreferences("dashboard", MODE_PRIVATE).edit().putString("grid_order", order).apply();
+            adapter.setGridOrder(order);
+            reloadApps(false);
+            // reloadApps puts focus back on the last tile; the pick keeps it on the chips.
+            grid.postDelayed(shelf::focusAppsChip, 150);
         }
 
         @Override
