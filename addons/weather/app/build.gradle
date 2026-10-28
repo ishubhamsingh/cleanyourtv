@@ -33,4 +33,6 @@ android {
 dependencies {
     // Test only (never in the APK): plain JVM tests for the code and AQI tables, src/test.
     testImplementation 'junit:junit:4.13.2'
+    // org.json is a stub in plain JVM tests: the real one, for the dashboard card's parsing (test only).
+    testImplementation 'org.json:json:20231013'
 }

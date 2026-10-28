@@ -79,4 +79,21 @@ public class ForecastTest {
         assertEquals(10, Forecast.mph(16));
         assertEquals(62, Forecast.mph(100));
     }
+
+    @Test
+    public void theDashboardCardTakesNowTodayAndTheNextFiveHours() throws Exception {
+        org.json.JSONObject reply = new org.json.JSONObject("{"
+                + "\"current\":{\"temperature_2m\":18.2,\"relative_humidity_2m\":60,\"weather_code\":2,\"is_day\":0},"
+                + "\"daily\":{\"temperature_2m_max\":[21.4],\"temperature_2m_min\":[13.1]},"
+                + "\"hourly\":{\"time\":[\"2026-10-29T20:00\",\"2026-10-29T21:00\",\"2026-10-29T22:00\",\"2026-10-29T23:00\","
+                + "\"2026-10-30T00:00\",\"2026-10-30T01:00\"],"
+                + "\"temperature_2m\":[18,17,16,15,14,13],\"weather_code\":[2,2,3,3,61,61]}}");
+        org.json.JSONObject card = Forecast.card(reply);
+        assertEquals(18.2, card.getDouble("temp"), 1e-9);
+        assertEquals(2, card.getInt("code"));
+        assertEquals(21.4, card.getDouble("hi"), 1e-9);
+        assertEquals(5, card.getJSONArray("hours").length());
+        assertEquals("21:00", card.getJSONArray("hours").getJSONObject(0).getString("time"));
+        assertEquals(61, card.getJSONArray("hours").getJSONObject(4).getInt("code"));
+    }
 }

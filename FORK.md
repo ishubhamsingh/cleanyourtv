@@ -33,7 +33,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Taste** | Hold OK on a poster: *More like this* or *Not interested*. Every tab re-orders by the genres and languages you like; no app may fill a tab. | automatic |
 | **TMDB account** | *More like this* adds to your TMDB Favourites, *Not interested* rates 2/10; both are read back after a reinstall. | `tmdb_session`, `tmdb_account` (optional) |
 | **Now playing** | An animated music button in the top bar while Spotify or any media app plays; OK opens a glass card with art, title, artist, progress and previous / play-pause / next. | `now_playing` + one ADB grant |
-| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls), System (live download speed, Wi-Fi band, uptime, memory, storage) and Screen time (today, the week, top apps). Folds away below the dock. Weather is next. | `dashboard` |
+| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls), System (live download speed, Wi-Fi band, uptime, memory, storage) and Weather (city, now, high/low, the next hours) and Screen time (today, the week, top apps). Folds away below the dock. | `dashboard` |
 | **Aurora background** | Instead of wallpapers: slow drifting clouds of colour taken from the playing track's album art, like Apple Music; the clock screensaver shows it with the track under the clock while music plays. Theme `my-aurora`. | `aurora_background` |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
@@ -146,6 +146,9 @@ the big app name and artwork above the dock and the stats line:
 - **Screen time:** today's time in your TV apps (on screen, and music playing behind Home: each app counts whichever is longer), the last seven days as bars, today against the days before (once
   the TV has three days of history), and the three apps you used most today. Grant it once:
   `adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow`; without it the card says so.
+- **Weather** (with the Weather add-on installed, `addons/weather`, built and installed like Discover's extension):
+  your city, the temperature and conditions, today's high and low and the next five hours, from Open-Meteo (free, no
+  key). Pick the city once by opening the Weather app (OK on the card). Offline it shows when it last updated.
 - **System:** download speed now and over the last minute, the Wi-Fi band (or Ethernet), uptime, memory and
   storage. OK opens storage settings. CPU and temperature are not shown: Android hides both from apps.
 

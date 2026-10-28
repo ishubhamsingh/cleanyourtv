@@ -56,7 +56,9 @@ final class Dashboard {
     private final Host host;
     private final float density;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final View row, now, system, screen, controls, times;
+    private final View row, now, weather, system, screen, controls, times;
+    private static final String WEATHER_PKG = "io.github.sumyabazar1.weather";
+    private static final android.net.Uri WEATHER_URI = android.net.Uri.parse("content://" + WEATHER_PKG + ".card/now");
     private final TextView screenTotal, screenTrend;
     private final ViewGroup screenApps;
     private final BarsView bars;
@@ -90,6 +92,7 @@ final class Dashboard {
             sampleNetwork();
             if (ticks % 5 == 0) updateSystem();
             if (ticks % 60 == 0) loadScreenTime();
+            if (ticks % 600 == 0) loadWeather();
             ticks++;
             handler.postDelayed(this, 1000);
         }
@@ -111,7 +114,8 @@ final class Dashboard {
         screenTrend = row.findViewById(R.id.dashScreenTrend);
         screenApps = row.findViewById(R.id.dashScreenApps);
         bars = row.findViewById(R.id.dashBars);
-        cards = new View[]{now, system, screen};
+        weather = row.findViewById(R.id.dashWeather);
+        cards = new View[]{now, weather, system, screen};
         art = row.findViewById(R.id.dashArt);
         app = row.findViewById(R.id.dashApp);
         title = row.findViewById(R.id.dashTitle);
@@ -495,6 +499,89 @@ final class Dashboard {
         }
     }
 
+    // ---- Weather ---------------------------------------------------------------------------------
+
+    /** The Weather add-on's card provider, read off the main thread; no add-on (or no access): no card. */
+    private void loadWeather() {
+        android.content.ContentResolver resolver = activity.getContentResolver();
+        new Thread(() -> {
+            String json = null;
+            try (android.database.Cursor c = resolver.query(WEATHER_URI, null, null, null, null)) {
+                if (c != null && c.moveToFirst()) json = c.getString(0);
+            } catch (RuntimeException ignored) {   // not installed, or signed with another key
+            }
+            String result = json;
+            handler.post(() -> showWeather(result));
+        }, "weather-card").start();
+    }
+
+    private void showWeather(String json) {
+        org.json.JSONObject w;
+        try {
+            w = json == null ? null : new org.json.JSONObject(json);
+        } catch (org.json.JSONException e) {
+            w = null;
+        }
+        boolean show = w != null && w.length() > 0;
+        if (show != (weather.getVisibility() == View.VISIBLE)) {
+            if (!show && weather.hasFocus()) now.requestFocus();
+            weather.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (!show) return;
+        TextView place = weather.findViewById(R.id.dashWxPlace), icon = weather.findViewById(R.id.dashWxIcon),
+                temp = weather.findViewById(R.id.dashWxTemp), cond = weather.findViewById(R.id.dashWxCond),
+                hiLo = weather.findViewById(R.id.dashWxHiLo);
+        ViewGroup hours = weather.findViewById(R.id.dashWxHours);
+        hours.removeAllViews();
+        place.setText(w.optString("place", ""));
+        if (w.optBoolean("needsPlace") || !w.has("temp")) {
+            icon.setText("");
+            temp.setText("–");
+            cond.setText(w.optBoolean("needsPlace") ? R.string.dash_wx_pick : R.string.dash_usage_off);
+            if (w.optBoolean("offline")) cond.setText("Offline");
+            hiLo.setText(R.string.dash_wx_open);
+            return;
+        }
+        int code = w.optInt("code");
+        boolean day = w.optBoolean("day", true);
+        icon.setText(WeatherText.symbol(code, day));
+        temp.setText(WeatherText.degrees(w.optDouble("temp")));
+        cond.setText(WeatherText.word(code));
+        long updated = w.optLong("updated");
+        if (updated > 0 && System.currentTimeMillis() - updated > 2 * 3600_000L) {
+            // Offline for a while: say how old it is instead of the high and low.
+            hiLo.setText(activity.getString(R.string.dash_wx_updated,
+                    android.text.format.DateFormat.getTimeFormat(activity).format(new java.util.Date(updated))));
+        } else {
+            hiLo.setText(activity.getString(R.string.dash_wx_hilo, WeatherText.degrees(w.optDouble("hi")),
+                    WeatherText.degrees(w.optDouble("lo"))));
+        }
+        org.json.JSONArray list = w.optJSONArray("hours");
+        int n = list == null ? 0 : list.length();
+        String[] times = new String[n];
+        for (int i = 0; i < n; i++) times[i] = list.optJSONObject(i) == null ? "" : list.optJSONObject(i).optString("time");
+        String[] labels = WeatherText.hourLabels(times, android.text.format.DateFormat.is24HourFormat(activity));
+        for (int i = 0; i < n; i++) {
+            org.json.JSONObject h = list.optJSONObject(i);
+            if (h == null) continue;
+            android.widget.LinearLayout col = new android.widget.LinearLayout(activity);
+            col.setOrientation(android.widget.LinearLayout.VERTICAL);
+            col.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+            TextView t = new TextView(activity, null, 0, R.style.DashMono);
+            // Five across a quarter of the row: the bare hour ("9", "10", ...); the AM/PM would not fit.
+            t.setText(labels[i].split(" ")[0]);
+            t.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+            TextView d = new TextView(activity, null, 0, R.style.DashSmall);
+            d.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            d.setText(WeatherText.degrees(h.optDouble("temp")));
+            d.setTextColor(0xFFFFFFFF);
+            d.setPadding(0, Math.round(3 * density), 0, 0);
+            col.addView(t);
+            col.addView(d);
+            hours.addView(col, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        }
+    }
+
     // ---- keys ------------------------------------------------------------------------------------
 
     private void setUpKeys() {
@@ -513,6 +600,10 @@ final class Dashboard {
             } catch (android.content.ActivityNotFoundException e) {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
+        });
+        weather.setOnClickListener(v -> {
+            Intent open = activity.getPackageManager().getLeanbackLaunchIntentForPackage(WEATHER_PKG);
+            if (open != null) activity.startActivity(open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         });
         screen.setOnClickListener(v -> {
             if (!usageAllowed()) loadScreenTime();

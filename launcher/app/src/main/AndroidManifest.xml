@@ -15,6 +15,12 @@
         android:name="com.gathin.tvhome.permission.DISCOVER"
         android:protectionLevel="signature" />
     <uses-permission android:name="com.gathin.tvhome.permission.DISCOVER" />
+    <!-- Dashboard (config dashboard): read the Weather add-on's card provider. Signature level, declared here too so
+         either app can be installed first; only the add-on built with the same key qualifies. -->
+    <permission
+        android:name="com.gathin.tvhome.permission.WEATHER"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.gathin.tvhome.permission.WEATHER" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
          runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with

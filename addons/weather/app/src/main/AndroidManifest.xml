@@ -7,6 +7,12 @@
     <!-- The only permission: Open-Meteo, for the place search, the weather and the air quality. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- The Clean Your TV dashboard's Weather card reads CardProvider. Signature level, declared by both apps so
+         either can be installed first: only the launcher built with the same key can read it. -->
+    <permission
+        android:name="com.gathin.tvhome.permission.WEATHER"
+        android:protectionLevel="signature" />
+
     <application
         android:allowBackup="false"
         android:banner="@drawable/banner"
@@ -30,5 +36,11 @@
             </intent-filter>
             <meta-data android:name="com.gathin.tvhome.card" android:resource="@xml/module_card" />
         </activity>
+
+        <provider
+            android:name=".CardProvider"
+            android:authorities="io.github.sumyabazar1.weather.card"
+            android:exported="true"
+            android:readPermission="com.gathin.tvhome.permission.WEATHER" />
     </application>
 </manifest>

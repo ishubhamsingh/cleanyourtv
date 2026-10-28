@@ -137,6 +137,45 @@ final class Forecast {
     }
 
     /**
+     * The Clean Your TV dashboard's Weather card (CardProvider): now, today's high and low and the next five hours,
+     * as JSON: {"temp", "code", "day", "hi", "lo", "hours": [{"time": "21:00", "temp", "code"}, ...]}, temperatures in
+     * °C, codes corrected like the page's.
+     */
+    static JSONObject fetchCard(double latitude, double longitude) throws IOException, JSONException {
+        String where = String.format(Locale.ROOT, "latitude=%.4f&longitude=%.4f", latitude, longitude);
+        JSONObject reply = get("https://api.open-meteo.com/v1/forecast?" + where + "&models=icon_seamless"
+                + "&current=temperature_2m,relative_humidity_2m,weather_code,is_day"
+                + "&hourly=temperature_2m,weather_code&forecast_hours=6"
+                + "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1");
+        return card(reply);
+    }
+
+    /** {@link #fetchCard}'s JSON from Open-Meteo's reply; split out so it is tested without the network. */
+    static JSONObject card(JSONObject reply) throws JSONException {
+        JSONObject current = reply.getJSONObject("current");
+        double temp = current.getDouble("temperature_2m"), humidity = current.getDouble("relative_humidity_2m");
+        JSONObject daily = reply.getJSONObject("daily");
+        JSONObject out = new JSONObject()
+                .put("temp", temp)
+                .put("code", snowIfCold(current.getInt("weather_code"), temp, humidity))
+                .put("day", current.getInt("is_day") == 1)
+                .put("hi", daily.getJSONArray("temperature_2m_max").getDouble(0))
+                .put("lo", daily.getJSONArray("temperature_2m_min").getDouble(0));
+        JSONObject hourly = reply.getJSONObject("hourly");
+        JSONArray times = hourly.getJSONArray("time"), temps = hourly.getJSONArray("temperature_2m"),
+                codes = hourly.getJSONArray("weather_code");
+        JSONArray hours = new JSONArray();
+        // forecast_hours counts from the current hour: the next five after it.
+        for (int i = 1; i < times.length() && hours.length() < 5; i++) {
+            if (temps.isNull(i) || codes.isNull(i)) continue;
+            String t = times.getString(i);
+            hours.put(new JSONObject().put("time", t.substring(t.indexOf('T') + 1))
+                    .put("temp", temps.getDouble(i)).put("code", snowIfCold(codes.getInt(i), temps.getDouble(i), 100)));
+        }
+        return out.put("hours", hours);
+    }
+
+    /**
      * The models type precipitation by the air temperature, and around freezing they call rain what reaches the
      * ground as snow (ICON and GFS: "light rain" at 1 °C in a Ulaanbaatar blizzard). The wet-bulb temperature,
      * which counts how dry the air is, decides better: at 1 °C or below, rain and drizzle become snow of the same
