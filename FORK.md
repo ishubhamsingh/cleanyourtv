@@ -145,7 +145,9 @@ the big app name and artwork above the dock and the stats line:
 - **System:** download speed now and over the last minute, the Wi-Fi band (or Ethernet), uptime, memory and
   storage. OK opens storage settings. CPU and temperature are not shown: Android hides both from apps.
 
-**Up** from the dock reaches the cards and **Up** again the top buttons; **Left** and **Right** move between
+Moving below the dock (Discover, the app rows) folds the cards away so the posters get the room, and the playing
+track shows as a chip with moving bars beside the top buttons; coming back up, or **Back** from down there, returns
+to the dock and unfolds them. **Up** from the dock reaches the cards and **Up** again the top buttons; **Left** and **Right** move between
 cards and stop at the ends. The cards update once a second, only while Home is on screen. Now playing needs
 `now_playing` and its one-time grant (below).
 

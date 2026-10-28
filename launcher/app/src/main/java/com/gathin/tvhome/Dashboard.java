@@ -39,13 +39,23 @@ final class Dashboard {
         void focusTopBar();
 
         void focusDock();
+
+        /** The focused view is below the dock (Discover, the app rows): the cards fold away. */
+        boolean belowDock(View focused);
+
+        /** The cards finished folding or unfolding: what sits on the grid's tiles must be placed again. */
+        void onFolded();
     }
 
     private final Activity activity;
     private final Host host;
     private final float density;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final View now, system, controls, times;
+    private final View row, now, system, controls, times;
+    private final TextView chip;
+    private final EqualizerDrawable chipBars;
+    private android.animation.ValueAnimator fold;
+    private boolean collapsed;
     private final View[] cards;
     private final View[] buttons;
     private final ImageView art;
@@ -71,8 +81,10 @@ final class Dashboard {
         }
     };
 
-    private Dashboard(Activity activity, View row, Host host) {
+    private Dashboard(Activity activity, View row, TextView chip, Host host) {
         this.activity = activity;
+        this.row = row;
+        this.chip = chip;
         this.host = host;
         density = activity.getResources().getDisplayMetrics().density;
         prefs = activity.getSharedPreferences("dashboard", Context.MODE_PRIVATE);
@@ -105,7 +117,12 @@ final class Dashboard {
             }
         });
         art.setClipToOutline(true);
+        chipBars = new EqualizerDrawable(Math.round(18 * density));
+        chip.setCompoundDrawablesRelativeWithIntrinsicBounds(chipBars, null, null, null);
         setUpKeys();
+        activity.getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+            if (newFocus != null) setCollapsed(host.belowDock(newFocus));
+        });
         showTrack(null, null);
     }
 
@@ -115,7 +132,20 @@ final class Dashboard {
         ViewGroup column = (ViewGroup) gridFrame.getParent();
         View row = LayoutInflater.from(activity).inflate(R.layout.dashboard_cards, column, false);
         column.addView(row, column.indexOfChild(gridFrame));
-        return new Dashboard(activity, row, host);
+        // The top bar's chip for the playing track while the cards are folded away: not focusable, it only shows.
+        ViewGroup buttons = activity.findViewById(R.id.topButtons);
+        TextView chip = new TextView(activity, null, 0, R.style.TopButtonBase);
+        float d = activity.getResources().getDisplayMetrics().density;
+        chip.setFocusable(false);
+        chip.setClickable(false);
+        chip.setSingleLine(true);
+        chip.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        chip.setMaxWidth(Math.round(250 * d));
+        chip.setVisibility(View.GONE);
+        ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(42 * d));
+        lp.setMarginStart(Math.round(10 * d));
+        buttons.addView(chip, 0, lp);
+        return new Dashboard(activity, row, chip, host);
     }
 
     /** Focus on the card last used (Now playing the first time). False if the row cannot take it. */
@@ -133,6 +163,7 @@ final class Dashboard {
 
     void stop() {
         running = false;
+        chipBars.stop();
         handler.removeCallbacks(tick);
         leaveControls();
     }
@@ -148,6 +179,7 @@ final class Dashboard {
         controls.setVisibility(has ? View.VISIBLE : View.GONE);
         if (!has) {
             leaveControls();
+            showChip();
             String last = prefs.getString("app", "com.spotify.tv.android");
             app.setText(label(last));
             title.setText(R.string.dash_nothing);
@@ -156,6 +188,7 @@ final class Dashboard {
             return;
         }
         prefs.edit().putString("app", t.pkg).apply();
+        chip.setText(t.artist.isEmpty() ? t.title : t.title + "  ·  " + t.artist);
         app.setText(t.app);
         title.setText(t.title);
         artist.setText(t.artist);
@@ -163,6 +196,44 @@ final class Dashboard {
         else art.setImageDrawable(icon(t.pkg));
         play.setCompoundDrawablesRelativeWithIntrinsicBounds(t.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
         updateProgress();
+        showChip();
+    }
+
+    /**
+     * Focus below the dock folds the cards away (the grid below gets their room) and shows the playing track as a
+     * chip in the top bar; focus back on the dock, the cards or the top bar unfolds them.
+     */
+    private void setCollapsed(boolean collapse) {
+        if (collapse == collapsed) return;
+        collapsed = collapse;
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) row.getLayoutParams();
+        int full = Math.round(156 * density), margin = Math.round(14 * density);
+        if (fold != null) fold.cancel();
+        float from = lp.height / (float) full, to = collapse ? 0f : 1f;
+        fold = android.animation.ValueAnimator.ofFloat(from, to);
+        fold.setDuration(220);
+        fold.addUpdateListener(a -> {
+            float f = (float) a.getAnimatedValue();
+            lp.height = Math.round(full * f);
+            lp.topMargin = Math.round(margin * f);
+            row.setAlpha(f);
+            row.setLayoutParams(lp);
+        });
+        fold.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                host.onFolded();
+            }
+        });
+        fold.start();
+        showChip();
+    }
+
+    private void showChip() {
+        boolean show = collapsed && track != null;
+        chip.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show && track.playing) chipBars.start();
+        else chipBars.stop();
     }
 
     private void updateProgress() {

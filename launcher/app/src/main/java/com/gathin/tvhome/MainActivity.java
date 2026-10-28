@@ -741,6 +741,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             public void focusDock() {
                 focusTile(singleRow || lastFocused < COLUMNS ? lastFocused : 0);
             }
+
+            @Override
+            public boolean belowDock(View focused) {
+                View item = grid.findContainingItemView(focused);
+                return item != null && grid.getChildAdapterPosition(item) >= (singleRow ? adapter.appCount() : COLUMNS);
+            }
+
+            @Override
+            public void onFolded() {
+                // The tiles moved without the grid scrolling: place the glass on the focused one again.
+                grid.post(() -> {
+                    View focused = getCurrentFocus();
+                    View item = focused == null ? null : grid.findContainingItemView(focused);
+                    int pos = item == null ? -1 : grid.getChildAdapterPosition(item);
+                    if (focused != null && focused.getId() == R.id.card && pos >= 0 && pos < adapter.appCount()) {
+                        onTileFocused(pos, focused);
+                    }
+                });
+            }
         });
         if (cfg.nowPlaying) setUpNowPlaying();
         if (discoverOn) {
@@ -1642,8 +1661,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onBackPressed() {
-        // Home screen: Back goes nowhere, except out of the now-playing card.
+        // Home screen: Back goes nowhere, except out of the now-playing card, and with the dashboard from below the
+        // dock back up to it.
         if (nowPlayingShown()) closeNowPlaying(false);
+        View focused = getCurrentFocus();
+        if (dashboard != null && focused != null && grid.findContainingItemView(focused) != null
+                && grid.getChildAdapterPosition(grid.findContainingItemView(focused)) >= (singleRow ? adapter.appCount() : COLUMNS)) {
+            focusTile(singleRow ? 0 : lastFocused % COLUMNS);
+        }
     }
 
     // ---- glass highlight -------------------------------------------------------------------------
