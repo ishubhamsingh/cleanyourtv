@@ -61,7 +61,7 @@ class StreamerWatcherNoteTest(unittest.TestCase):
         self.assertIn("detached from the `adb shell` session", self.body)
         for recipe in ("local ADB client", "authorized key", "127.0.0.1:5555"):
             self.assertNotIn(recipe, self.body)
-        self.assertIn("../README.md#questions-people-ask", self.body)
+        self.assertIn("../REFERENCE.md#questions-people-ask", self.body)
         self.assertTrue((TROUBLE.parent / ".." / "README.md").resolve().exists())
 
 

@@ -186,7 +186,7 @@ def stats(text, entries, root):
     return text
 
 
-OWNED = ("README.md", "examples/README.md", "tools/readme_stats.py")
+OWNED = ("REFERENCE.md", "examples/README.md", "tools/readme_stats.py")
 
 
 def render(root, texts=None):
@@ -195,12 +195,12 @@ def render(root, texts=None):
     texts, if given, stands in for what those files hold now (by the same paths)."""
     entries = load(root)
     now = {p: (texts or {}).get(p) or (root / p).read_text(encoding="utf-8") for p in OWNED}
-    readme = between(now["README.md"], "tv-brands", brand_lines(entries), "README.md")
-    readme = between(readme, "tv-table", readme_rows(entries), "README.md")
+    readme = between(now["REFERENCE.md"], "tv-brands", brand_lines(entries), "REFERENCE.md")
+    readme = between(readme, "tv-table", readme_rows(entries), "REFERENCE.md")
     readme = counts(readme, entries, root)
     examples = between(now["examples/README.md"], "tv-table", examples_rows(entries), "examples/README.md")
     stats_py = stats(now["tools/readme_stats.py"], entries, root)
-    return {"README.md": readme, "examples/README.md": examples, "tools/readme_stats.py": stats_py}
+    return {"REFERENCE.md": readme, "examples/README.md": examples, "tools/readme_stats.py": stats_py}
 
 
 def stale(root):

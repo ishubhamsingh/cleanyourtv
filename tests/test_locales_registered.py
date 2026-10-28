@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "launcher/app/src/main/res"
 CONFIG = RES / "xml/locales_config.xml"
 MANIFEST = ROOT / "launcher/app/src/main/AndroidManifest.xml"
-FRONT = ROOT / "README.md"
+FRONT = ROOT / "REFERENCE.md"
 DEFAULT = "en"
 
 # The name each language goes by in README.md's Languages block, keyed by the locale it registers as.

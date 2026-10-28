@@ -20,7 +20,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 THEMES = ROOT / "themes"
-FRONT = ROOT / "README.md"
+FRONT = ROOT / "REFERENCE.md"
 
 # The row is `| **Themes** | ... N ship in [`themes/`](themes/)`. A count written as a word or as
 # digits is accepted, so rewording the cell stays free as long as the number is still there.
@@ -100,7 +100,7 @@ class CountTest(unittest.TestCase):
             (root / "aurora").mkdir()
             (root / "aurora" / "config.json").write_text("{}", encoding="utf-8")
             (root / "wallpapers").mkdir()  # a picture dump, not a theme
-            (root / "README.md").write_text("not a folder", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("not a folder", encoding="utf-8")
             self.assertEqual(["aurora"], theme_folders(root))
 
 

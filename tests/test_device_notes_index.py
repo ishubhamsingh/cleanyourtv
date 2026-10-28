@@ -282,7 +282,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             root = Path(tmp)
             (root / NOTES).mkdir(parents=True)
             (root / NOTES / "orphan.md").write_text("# Orphan\n", encoding="utf-8")
-            (root / "README.md").write_text("[list](examples/other/debloat.txt)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[list](examples/other/debloat.txt)\n", encoding="utf-8")
             self.assertEqual([f"{NOTES}/orphan.md"], unlinked_notes(root))
 
     def test_a_row_that_links_its_note_counts(self):
@@ -302,7 +302,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             root = Path(tmp)
             (root / NOTES).mkdir(parents=True)
             (root / NOTES / "sharp-32fi4ea.md").write_text("# Sharp\n", encoding="utf-8")
-            (root / "README.md").write_text(
+            (root / "REFERENCE.md").write_text(
                 "```\nsee docs/devices/sharp-32fi4ea.md\n```\n"
                 "`docs/devices/sharp-32fi4ea.md`\n"
                 "[upstream](https://github.com/Gathin23/cleanyourtv/blob/main/docs/devices/sharp-32fi4ea.md)\n",
@@ -314,7 +314,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             root = Path(tmp)
             (root / NOTES).mkdir(parents=True)
             (root / NOTES / "note one.md").write_text("# Note\n", encoding="utf-8")
-            (root / "README.md").write_text("[notes](docs/devices/note%20one.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[notes](docs/devices/note%20one.md)\n", encoding="utf-8")
             self.assertEqual([], unlinked_notes(root))
 
     def test_build_folders_are_skipped(self):
@@ -334,7 +334,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             root = Path(tmp)
             (root / NOTES / "baymax").mkdir(parents=True)
             (root / NOTES / "baymax" / "note.md").write_text("# Note\n", encoding="utf-8")
-            (root / "README.md").write_text("[notes](docs/devices/baymax/other.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[notes](docs/devices/baymax/other.md)\n", encoding="utf-8")
             self.assertEqual([f"{NOTES}/baymax/note.md"], unlinked_notes(root))
 
     def test_a_note_in_a_folder_that_is_linked_counts(self):
@@ -346,7 +346,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             (root / NOTES / "baymax" / "menu.png").write_bytes(b"\x89PNG\r\n\x1a\n")
             (root / NOTES / "board.md").write_text(
                 "# Board\n\nSecond unit: [the vendor settings record](baymax/note.md).\n", encoding="utf-8")
-            (root / "README.md").write_text("[board](docs/devices/board.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[board](docs/devices/board.md)\n", encoding="utf-8")
             self.assertEqual([], unlinked_notes(root))
 
     def test_a_screenshot_in_a_note_folder_is_reported_when_nothing_shows_it(self):
@@ -356,7 +356,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             (root / NOTES / "baymax").mkdir(parents=True)
             (root / NOTES / "baymax" / "note.md").write_text("# Note\n", encoding="utf-8")
             (root / NOTES / "baymax" / "menu.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-            (root / "README.md").write_text("[notes](docs/devices/baymax/note.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[notes](docs/devices/baymax/note.md)\n", encoding="utf-8")
             self.assertEqual([f"{NOTES}/baymax/menu.png"], unlinked_notes(root))
 
     def test_nested_note_folders_are_walked_to_the_bottom(self):
@@ -364,7 +364,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             root = Path(tmp)
             (root / NOTES / "a" / "b").mkdir(parents=True)
             (root / NOTES / "a" / "b" / "note.md").write_text("# Note\n", encoding="utf-8")
-            (root / "README.md").write_text("[notes](docs/devices/a/b/note.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[notes](docs/devices/a/b/note.md)\n", encoding="utf-8")
             (root / NOTES / "a" / "b" / "deep.md").write_text("# Deep\n", encoding="utf-8")
             self.assertEqual([f"{NOTES}/a/b/deep.md"], unlinked_notes(root))
 
@@ -374,7 +374,7 @@ class DeviceNotesLinkedTest(unittest.TestCase):
             (root / NOTES / "baymax" / "build").mkdir(parents=True)
             (root / NOTES / "baymax" / "build" / "out.md").write_text("# Out\n", encoding="utf-8")
             (root / NOTES / "baymax" / "note.md").write_text("# Note\n", encoding="utf-8")
-            (root / "README.md").write_text("[notes](docs/devices/baymax/note.md)\n", encoding="utf-8")
+            (root / "REFERENCE.md").write_text("[notes](docs/devices/baymax/note.md)\n", encoding="utf-8")
             self.assertEqual([], unlinked_notes(root))
 
     def test_the_walk_reads_every_note_in_the_tree(self):

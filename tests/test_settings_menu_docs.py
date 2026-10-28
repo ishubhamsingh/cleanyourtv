@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MAIN_ACTIVITY = ROOT / "launcher" / "app" / "src" / "main" / "java" / "com" / "gathin" / "tvhome" / "MainActivity.java"
 STRINGS = ROOT / "launcher" / "app" / "src" / "main" / "res" / "values" / "strings.xml"
-README = ROOT / "README.md"
+README = ROOT / "REFERENCE.md"
 VENDOR_NOTE = ROOT / "docs" / "devices" / "xiaomi-mitv-mteq0" / "xiaomi-mitv-mteq0.md"
 
 METHOD = "private void showSettingsMenu()"

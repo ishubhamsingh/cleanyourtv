@@ -41,7 +41,7 @@ sys.path.insert(0, str(ROOT / "tests"))
 import recovery  # noqa: E402
 from test_drift_check import FAKE_TV  # noqa: E402
 
-README = ROOT / "README.md"
+README = ROOT / "REFERENCE.md"
 FOLDER = ROOT / "examples" / "google-chromecast-gtv-4k"
 DEBLOAT = FOLDER / "debloat.txt"
 KEEP_CAST = FOLDER / "debloat-keep-cast.txt"

@@ -8,6 +8,7 @@ this file repeats their rules in the form an agent needs, and links to them for 
 
 | You were asked to | Do this |
 |---|---|
+| Set this launcher up on someone's TV (dashboard, Discover, Weather) | Follow [`.claude/skills/setup-tv/SKILL.md`](.claude/skills/setup-tv/SKILL.md) step by step; its debloat step uses PROMPT.md's rules below. |
 | Clean up a TV: debloat it, install the launcher, push a theme | Read [PROMPT.md](PROMPT.md) and follow it exactly, on the real TV. Use the tools in `tools/` and the launcher in `launcher/` rather than writing new ones; the only file you need to change is `launcher/app/src/main/res/values/config.xml`, or a theme's `config.json`, for this TV. Do not edit the repo's docs, tests or other code, and do not open issues or pull requests unless the person asks you to. |
 | Change this repo: a TV list, a fix, a translation, a theme, docs | Skip the next section and read on from [Repo map](#repo-map). |
 
@@ -62,7 +63,11 @@ share their TV's list afterwards, follow [`docs/workflows/tv-list.md`](docs/work
 | Path | What it is |
 |---|---|
 | `PROMPT.md` | The prompt people paste into their agent. Brand-neutral; safety rules live here. |
-| `README.md` | Front page, with the TV table (generated from `examples/*/tv.json` by `tools/gen_tables.py`) and the Tools table. `README.zh-CN.md` and `README.vi.md` are translations. |
+| `README.md` | This fork's front page: features, requirements, setup by Claude Code (`/setup-tv`) or by hand. |
+| `REFERENCE.md` | Upstream's full front page, kept as the reference: the TV table (generated from `examples/*/tv.json` by `tools/gen_tables.py`), the Tools table, Launcher settings. |
+| `FORK.md` | Every feature this fork adds, its keys and troubleshooting. |
+| `.claude/skills/setup-tv/` | The end-to-end setup skill: connect, RAM/Android checks, debloat, install, theme and profile, grants, TMDB/Watchmode, Weather, close up. |
+| `profiles/` | TV profiles: one TV model's dock, Live TV app and remote buttons, laid over a theme by `tools/theme.sh <theme> <profile>`. |
 | `CONTRIBUTING.md` | The contributor guide for people. "Where does my idea go?" is the routing table. |
 | `SECURITY.md` | Private vulnerability reporting. |
 | `SHOWCASE.md` | Projects built on this repo that live in their own repositories. |

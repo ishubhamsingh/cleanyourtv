@@ -187,6 +187,8 @@ with `adb shell input` do not go through the helper; test with the real remote.
 
 ## Themes and the grid
 
+- **TV profiles:** a theme sets the look; a [profile](profiles/README.md) sets one TV's dock, Live TV app and remote
+  buttons. Push both: `TV_HOST=<tv ip> tools/theme.sh themes/my-glass profiles/sony-bravia-ae2-in`.
 - **my-aurora:** the same, with the aurora background instead of the wallpapers: `TV_HOST=<tv ip> tools/theme.sh themes/my-aurora`. Switch back any time with the my-glass line.
 - **my-glass:** `TV_HOST=<tv ip> tools/theme.sh themes/my-glass`. Edit `themes/my-glass/config.json` and push again
   to change it; `tools/theme.sh --reset` goes back to the plain look.

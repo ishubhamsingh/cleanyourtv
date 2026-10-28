@@ -23,9 +23,9 @@ Original setup sources:
 - Have the original remote and a **USB mouse connected to the TV**. The mouse is mandatory:
   the remote cannot navigate Android system settings on this firmware.
 - Connect the computer and TV to a trusted local network. Prepare an ADB client using the
-  [manual workflow](../../README.md#doing-it-by-hand). Keep network ADB off the Internet.
+  [manual workflow](../../REFERENCE.md#doing-it-by-hand). Keep network ADB off the Internet.
 - Before changing packages or Home, save package lists, disabled-package lists, properties and
-  settings privately, and prepare the [restore tools](../../README.md#doing-it-by-hand).
+  settings privately, and prepare the [restore tools](../../REFERENCE.md#doing-it-by-hand).
   Keep native settings, network, audio, input, remote, keyboard and update services enabled.
 
 In the factory menu, change **only ToFac**. Leave calibration, initialization, reset and other
