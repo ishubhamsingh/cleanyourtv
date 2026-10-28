@@ -173,4 +173,9 @@
     <string name="dash_ethernet">אתרנט</string>
     <string name="dash_nothing">שום דבר לא מתנגן</string>
     <string name="dash_ok_opens">OK פותח את %s</string>
+    <string name="dash_screen">זמן מסך</string>
+    <string name="dash_today">היום</string>
+    <string name="dash_vs_week">%1$s לעומת שבוע שעבר</string>
+    <string name="dash_usage_off">גישה לנתוני שימוש כבויה</string>
+    <string name="dash_usage_hint">יש לאפשר פעם אחת דרך ADB, ראו FORK.md</string>
 </resources>

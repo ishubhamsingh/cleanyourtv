@@ -177,4 +177,9 @@
     <string name="dash_ethernet">Ethernet</string>
     <string name="dash_nothing">Nothing playing</string>
     <string name="dash_ok_opens">OK opens %s</string>
+    <string name="dash_screen">Screen time</string>
+    <string name="dash_today">Today</string>
+    <string name="dash_vs_week">%1$s vs last week</string>
+    <string name="dash_usage_off">Usage access is off</string>
+    <string name="dash_usage_hint">Allow it once over ADB, see FORK.md</string>
 </resources>

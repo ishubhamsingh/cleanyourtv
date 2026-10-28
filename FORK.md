@@ -33,7 +33,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Taste** | Hold OK on a poster: *More like this* or *Not interested*. Every tab re-orders by the genres and languages you like; no app may fill a tab. | automatic |
 | **TMDB account** | *More like this* adds to your TMDB Favourites, *Not interested* rates 2/10; both are read back after a reinstall. | `tmdb_session`, `tmdb_account` (optional) |
 | **Now playing** | An animated music button in the top bar while Spotify or any media app plays; OK opens a glass card with art, title, artist, progress and previous / play-pause / next. | `now_playing` + one ADB grant |
-| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls) and System (live download speed, Wi-Fi band, uptime, memory, storage). Weather and Screen time cards are next. | `dashboard` |
+| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls), System (live download speed, Wi-Fi band, uptime, memory, storage) and Screen time (today, the week, top apps). Folds away below the dock. Weather is next. | `dashboard` |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
 | **my-glass theme** | The glass look with 14 rotating landscapes, 6 app columns, round icon-only top buttons (music while playing, search, inputs, settings), stats line and a 3-minute idle clock. | `themes/my-glass` |
@@ -142,6 +142,9 @@ the big app name and artwork above the dock and the stats line:
 - **Now playing:** album art, app, title, artist and a progress bar with times. **OK** moves onto previous /
   play-pause / next; **Up**, **Down** or **Back** leaves them. **Hold OK** opens the app's player. With nothing
   playing it says so, and OK opens the music app you used last.
+- **Screen time:** today's time in your TV apps, the last seven days as bars, today against the days before (once
+  the TV has three days of history), and the three apps you used most today. Grant it once:
+  `adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow`; without it the card says so.
 - **System:** download speed now and over the last minute, the Wi-Fi band (or Ethernet), uptime, memory and
   storage. OK opens storage settings. CPU and temperature are not shown: Android hides both from apps.
 

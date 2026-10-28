@@ -30,7 +30,9 @@ import android.widget.TextView;
  * Dashboard (config dashboard): a row of cards between the top bar and the dock (dashboard_cards.xml). Now playing
  * shows the media session NowPlaying reports, or "Nothing playing" with OK opening the last music app; OK on it
  * reaches previous / play-pause / next and Up, Down or Back leaves them. System shows the download speed over the
- * last minute, the Wi-Fi band, uptime, memory and storage. Ticks once a second only while Home is on screen.
+ * last minute, the Wi-Fi band, uptime, memory and storage. Screen time adds up the TV apps' foreground time from
+ * usage events (today, the week, against last week, the top three apps). Ticks once a second only while Home is on
+ * screen; Screen time reads its events off the main thread once a minute.
  */
 final class Dashboard {
 
@@ -51,7 +53,10 @@ final class Dashboard {
     private final Host host;
     private final float density;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final View row, now, system, controls, times;
+    private final View row, now, system, screen, controls, times;
+    private final TextView screenTotal, screenTrend;
+    private final ViewGroup screenApps;
+    private final BarsView bars;
     private final TextView chip;
     private final EqualizerDrawable chipBars;
     private android.animation.ValueAnimator fold;
@@ -76,7 +81,9 @@ final class Dashboard {
             if (!running) return;
             updateProgress();
             sampleNetwork();
-            if (ticks++ % 5 == 0) updateSystem();
+            if (ticks % 5 == 0) updateSystem();
+            if (ticks % 60 == 0) loadScreenTime();
+            ticks++;
             handler.postDelayed(this, 1000);
         }
     };
@@ -92,7 +99,12 @@ final class Dashboard {
         system = row.findViewById(R.id.dashSystem);
         controls = row.findViewById(R.id.dashControls);
         times = row.findViewById(R.id.dashTimes);
-        cards = new View[]{now, system};
+        screen = row.findViewById(R.id.dashScreen);
+        screenTotal = row.findViewById(R.id.dashScreenTotal);
+        screenTrend = row.findViewById(R.id.dashScreenTrend);
+        screenApps = row.findViewById(R.id.dashScreenApps);
+        bars = row.findViewById(R.id.dashBars);
+        cards = new View[]{now, system, screen};
         art = row.findViewById(R.id.dashArt);
         app = row.findViewById(R.id.dashApp);
         title = row.findViewById(R.id.dashTitle);
@@ -157,6 +169,7 @@ final class Dashboard {
     void start() {
         if (running) return;
         running = true;
+        ticks = 0;
         rxPrev = -1;
         handler.post(tick);
     }
@@ -325,6 +338,126 @@ final class Dashboard {
         return kind.isEmpty() ? label : label + " · " + kind;
     }
 
+    // ---- Screen time ----------------------------------------------------------------------------
+
+    private static final int DAYS = 7;
+    private static final int[] DOTS = {0xFFF87171, 0xFFFBBF24, 0xFF60A5FA};
+
+    @SuppressWarnings("deprecation")
+    private boolean usageAllowed() {
+        android.app.AppOpsManager ops = activity.getSystemService(android.app.AppOpsManager.class);
+        return ops != null && ops.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), activity.getPackageName()) == android.app.AppOpsManager.MODE_ALLOWED;
+    }
+
+    private void loadScreenTime() {
+        if (!usageAllowed()) {
+            screenTotal.setText("–");
+            screenTrend.setText(R.string.dash_usage_off);
+            screenApps.removeAllViews();
+            TextView hint = new TextView(activity, null, 0, R.style.DashSmall);
+            hint.setTextSize(12);
+            hint.setText(R.string.dash_usage_hint);
+            screenApps.addView(hint);
+            return;
+        }
+        Context app = activity.getApplicationContext();
+        new Thread(() -> {
+            ScreenTime.Tally tally = readUsage(app);
+            if (tally != null) handler.post(() -> showScreenTime(tally));
+        }, "screen-time").start();
+    }
+
+    /** The usage events of the last seven days, added up; on a background thread. */
+    private static ScreenTime.Tally readUsage(Context context) {
+        android.app.usage.UsageStatsManager usm = context.getSystemService(android.app.usage.UsageStatsManager.class);
+        if (usm == null) return null;
+        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+        java.time.LocalDate today = java.time.LocalDate.now(zone);
+        long[] dayStarts = new long[DAYS];
+        for (int i = 0; i < DAYS; i++) {
+            dayStarts[i] = today.minusDays(DAYS - 1 - i).atStartOfDay(zone).toInstant().toEpochMilli();
+        }
+        long now = System.currentTimeMillis();
+        // The TV's apps: anything with a TV (or phone) launcher entry, but not this launcher.
+        java.util.Set<String> counted = new java.util.HashSet<>();
+        PackageManager pm = context.getPackageManager();
+        for (String category : new String[]{Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
+            Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(category);
+            for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(probe, 0)) counted.add(ri.activityInfo.packageName);
+        }
+        counted.remove(context.getPackageName());
+        java.util.List<String> pkgs = new java.util.ArrayList<>();
+        java.util.List<Integer> kinds = new java.util.ArrayList<>();
+        java.util.List<Long> times = new java.util.ArrayList<>();
+        android.app.usage.UsageEvents events = usm.queryEvents(dayStarts[0], now);
+        android.app.usage.UsageEvents.Event e = new android.app.usage.UsageEvents.Event();
+        while (events != null && events.hasNextEvent()) {
+            events.getNextEvent(e);
+            int kind;
+            switch (e.getEventType()) {
+                case 1:           // ACTIVITY_RESUMED (MOVE_TO_FOREGROUND)
+                    kind = ScreenTime.START;
+                    break;
+                case 2:           // ACTIVITY_PAUSED
+                case 23:          // ACTIVITY_STOPPED (Android 10)
+                    kind = ScreenTime.STOP;
+                    break;
+                case 16:          // SCREEN_NON_INTERACTIVE
+                case 26:          // DEVICE_SHUTDOWN
+                    kind = ScreenTime.ALL_STOP;
+                    break;
+                default:
+                    continue;
+            }
+            pkgs.add(e.getPackageName());
+            kinds.add(kind);
+            times.add(e.getTimeStamp());
+        }
+        int n = kinds.size();
+        int[] k = new int[n];
+        long[] t = new long[n];
+        for (int i = 0; i < n; i++) {
+            k[i] = kinds.get(i);
+            t[i] = times.get(i);
+        }
+        return ScreenTime.tally(pkgs.toArray(new String[0]), k, t, dayStarts, now, counted);
+    }
+
+    private void showScreenTime(ScreenTime.Tally tally) {
+        screenTotal.setText(DashboardText.uptime(tally.days[DAYS - 1]));
+        bars.setValues(tally.days);
+        Integer change = ScreenTime.versusLastWeek(tally.days);
+        screenTrend.setText(change == null ? "" : activity.getString(R.string.dash_vs_week,
+                (change <= 0 ? "↓ " : "↑ ") + Math.abs(change) + "%"));
+        screenTrend.setTextColor(change != null && change <= 0 ? 0xFF86EFAC : 0xFFFCD34D);
+        screenApps.removeAllViews();
+        int i = 0;
+        for (java.util.Map.Entry<String, Long> entry : ScreenTime.top(tally.today, 3)) {
+            if (entry.getValue() < 60_000) break;      // "0m" says nothing
+            android.widget.LinearLayout line = new android.widget.LinearLayout(activity);
+            line.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            TextView name = new TextView(activity, null, 0, R.style.DashSmall);
+            name.setTextSize(12);
+            name.setText(label(entry.getKey()));
+            android.graphics.drawable.GradientDrawable dot = new android.graphics.drawable.GradientDrawable();
+            dot.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            dot.setColor(DOTS[i++ % DOTS.length]);
+            int size = Math.round(6 * density);
+            dot.setSize(size, size);
+            name.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null);
+            name.setCompoundDrawablePadding(Math.round(7 * density));
+            TextView minutes = new TextView(activity, null, 0, R.style.DashMono);
+            minutes.setText(DashboardText.uptime(entry.getValue()));
+            line.addView(name, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            line.addView(minutes);
+            ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.topMargin = Math.round(3 * density);
+            screenApps.addView(line, lp);
+        }
+    }
+
     // ---- keys ------------------------------------------------------------------------------------
 
     private void setUpKeys() {
@@ -343,6 +476,9 @@ final class Dashboard {
             } catch (android.content.ActivityNotFoundException e) {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
+        });
+        screen.setOnClickListener(v -> {
+            if (!usageAllowed()) loadScreenTime();
         });
         boolean rtl = activity.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
         for (int i = 0; i < cards.length; i++) {
