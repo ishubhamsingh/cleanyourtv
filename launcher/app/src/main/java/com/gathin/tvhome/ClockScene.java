@@ -14,6 +14,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.io.File;
 import java.util.Random;
@@ -22,6 +26,10 @@ import java.util.Random;
  * The clock screensaver's scene (layout dream_clock): the thin clock and date on black over a slow ambient
  * glow. Every minute the clock drifts to a new spot and the glow shifts colour, so nothing burns in.
  * Shared by ClockDream (the system screensaver) and ClockActivity (Home left idle).
+ *
+ * With aurora_background (and now_playing's grant), while media plays the album art's drifting colours fade in behind
+ * the clock and the cover, title, artist and progress sit under the date; paused or stopped, both go and the glow
+ * is back.
  */
 final class ClockScene {
 
@@ -47,6 +55,24 @@ final class ClockScene {
     private Resources wallpaperRes;
     /** Bumped by stop(): a decode started before it finds a different number and drops its result. Main thread only. */
     private int wallpaperGeneration;
+
+    /** aurora_background: the playing track's backdrop and media block; null when off. */
+    private AuroraView aurora;
+    private View media;
+    private NowPlaying nowPlaying;
+    private NowPlaying.Track track;
+    private boolean mediaShown;
+    private final Runnable progressTick = new Runnable() {
+        @Override
+        public void run() {
+            if (track == null || !mediaShown) return;
+            float f = track.progress(android.os.SystemClock.elapsedRealtime());
+            ProgressBar bar = media.findViewById(R.id.dreamProgress);
+            bar.setVisibility(f < 0 ? View.INVISIBLE : View.VISIBLE);
+            if (f >= 0) bar.setProgress(Math.round(f * 1000));
+            handler.postDelayed(this, 1000);
+        }
+    };
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -79,12 +105,88 @@ final class ClockScene {
         handler.removeCallbacks(tick);
         handler.postDelayed(tick, MOVE_MS);
         if (wallpaperFile != null && !wallpaperShown) loadWallpaper();
+        if (nowPlaying != null) nowPlaying.start();
     }
 
     void stop() {
         handler.removeCallbacksAndMessages(null);   // the tick and any glow steps still queued
         content.animate().cancel();
         wallpaperGeneration++;   // a decode still running must not attach its picture to a stopped scene
+        if (nowPlaying != null) nowPlaying.stop();
+        if (aurora != null) aurora.stop();
+    }
+
+    /**
+     * aurora_background with now_playing: the playing track over the album art's colours (see the class comment).
+     * Call after useHomeWallpaper and before start().
+     */
+    void useNowPlaying(Context ctx) {
+        Config cfg;
+        try {
+            cfg = Config.load(ctx);
+        } catch (RuntimeException e) {
+            return;
+        }
+        if (!cfg.auroraBackground || !cfg.nowPlaying) return;
+        ViewGroup root = (ViewGroup) ambient.getParent();
+        aurora = new AuroraView(ctx, cfg.reducedMotion || !cfg.animations);
+        aurora.setAlpha(0f);
+        root.addView(aurora, root.indexOfChild(ambient) + 1,
+                new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        media = android.view.LayoutInflater.from(ctx).inflate(R.layout.dream_media, (ViewGroup) content, false);
+        ((ViewGroup) content).addView(media);
+        ImageView art = media.findViewById(R.id.dreamArt);
+        float d = ctx.getResources().getDisplayMetrics().density;
+        art.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, android.graphics.Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 10 * d);
+            }
+        });
+        art.setClipToOutline(true);
+        nowPlaying = new NowPlaying(ctx, this::showTrack);
+    }
+
+    private void showTrack(NowPlaying.Track t) {
+        track = t;
+        boolean playing = t != null && t.playing;
+        if (playing) {
+            ((TextView) media.findViewById(R.id.dreamTitle)).setText(t.title);
+            TextView artist = media.findViewById(R.id.dreamArtist);
+            artist.setText(t.artist);
+            artist.setVisibility(t.artist.isEmpty() ? View.GONE : View.VISIBLE);
+            ImageView art = media.findViewById(R.id.dreamArt);
+            if (t.art != null) {
+                art.setImageBitmap(t.art);
+                aurora.setArt(t.art);
+            }
+        }
+        if (playing == mediaShown) return;
+        mediaShown = playing;
+        if (content.getAlpha() < 0.05f) {
+            // Starting (start() fades the clock in and places it): no swap to animate.
+            media.setVisibility(playing ? View.VISIBLE : View.GONE);
+        } else {
+            // The block changes the clock's size: swap it with the clock faded out, then place it again. A timer, not
+            // an end action, which a later animate() call on the clock would cancel.
+            content.animate().alpha(0f).setDuration(600).start();
+            handler.postDelayed(() -> {
+                media.setVisibility(mediaShown ? View.VISIBLE : View.GONE);
+                content.post(() -> {
+                    placeClock();
+                    content.animate().alpha(1f).setDuration(900).start();
+                });
+            }, 650);
+        }
+        aurora.animate().cancel();
+        if (playing) {
+            aurora.start();
+            aurora.animate().alpha(1f).setDuration(1500).start();
+            handler.removeCallbacks(progressTick);
+            handler.post(progressTick);
+        } else {
+            aurora.animate().alpha(0f).setDuration(1500).withEndAction(aurora::stop).start();
+        }
     }
 
     /**

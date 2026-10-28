@@ -19,6 +19,7 @@ public class ClockDream extends DreamService {
         setContentView(R.layout.dream_clock);
         scene = new ClockScene(getWindow().getDecorView());
         scene.useHomeWallpaper(this);
+        scene.useNowPlaying(this);
     }
 
     @Override
