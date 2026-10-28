@@ -4,7 +4,7 @@
   "cinematic_home": true,
   "dock_glass": true,
   "icon_only_buttons": true,
-  "app_glow": true,
+  "app_glow": false,
   "glow_style": "horizon",
   "focus_overshoot": false,
   "advanced_effects": true,
@@ -17,5 +17,6 @@
   "show_network_pill": false,
   "icon_only_inputs": true,
   "columns": 6,
-  "dashboard": true
+  "dashboard": true,
+  "glass_style": "outline"
 }

@@ -29,6 +29,8 @@ public class GlassView extends View {
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
+    /** glass_style outline: a solid white rim at the tile's edge and a soft white glow, nothing over the tile. */
+    private boolean outline;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -49,7 +51,7 @@ public class GlassView extends View {
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
             glowAlpha = 0x30;
-            rim.setColor(0xCCFFFFFF);
+            rim.setColor(outline ? 0xFFFFFFFF : 0xCCFFFFFF);
         } else {
             glowRgb = argb & 0xFFFFFF;
             glowAlpha = 0x70;
@@ -63,9 +65,11 @@ public class GlassView extends View {
 
     /** One of Config's GLASS_* styles. */
     void setStyle(String style) {
-        flat = Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
-        halo = Config.GLASS_HALO.equals(style);
-        rim.setStrokeWidth((flat ? 2f : 1.5f) * density);
+        outline = Config.GLASS_OUTLINE.equals(style);
+        flat = outline || Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
+        halo = outline || Config.GLASS_HALO.equals(style);
+        rim.setStrokeWidth((outline ? 3f : flat ? 2f : 1.5f) * density);
+        if (outline) rim.setColor(0xFFFFFFFF);
         invalidate();
     }
 
@@ -92,7 +96,7 @@ public class GlassView extends View {
         if (!flat || halo) {
             int rings = 12;
             float step = inset / rings;
-            int alpha = flat ? glowAlpha / 2 : glowAlpha;
+            int alpha = outline ? Math.max(glowAlpha, 0x60) : flat ? glowAlpha / 2 : glowAlpha;
             glow.setStrokeWidth(step + 0.5f);
             for (int i = 0; i < rings; i++) {
                 float o = step * (i + 0.5f);
