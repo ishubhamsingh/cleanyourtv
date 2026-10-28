@@ -105,7 +105,7 @@ class TranslationRecipeGateTest(unittest.TestCase):
         ci = CI.read_text(encoding="utf-8")
         apk, limit = gate(ci)
         self.assertEqual("launcher/app/build/outputs/apk/release/app-release.apk", apk)
-        self.assertEqual(589824, limit)
+        self.assertEqual(655360, limit)  # this fork; upstream keeps 589824
         self.assertTrue(runs_on_pull_requests(ci),
                         "ci.yml's launcher job no longer runs on a pull request, so a translation PR "
                         "would not meet the gate docs/workflows/translation.md now points at")

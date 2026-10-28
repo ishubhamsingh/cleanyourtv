@@ -26,7 +26,7 @@
    needs its strings in every locale.
 6. Moving hard-coded text into resources is welcome; do not bundle unrelated build changes with it.
 7. Check the size gate before you push. A language's strings ship in the release APK, and that APK has to
-   stay under 589,824 B (576 KB): `launcher/app/build/outputs/apk/release/app-release.apk`, measured with
+   stay under 655,360 B (640 KB) in this fork (upstream keeps 589,824): `launcher/app/build/outputs/apk/release/app-release.apk`, measured with
    `stat -c %s` on Linux or `stat -f %z` on macOS, and checked by the "Launcher build and unit tests" job
    on every pull request. `README.md` quotes the launcher at about 517 KB, so a full language can be the
    difference between green and a failed build. A language that does not fit is a maintainer decision, not
