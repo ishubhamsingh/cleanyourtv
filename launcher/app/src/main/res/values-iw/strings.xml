@@ -183,7 +183,7 @@
     <string name="all_apps_count">%1$d מותקנות</string>
     <string name="sort_name">שם</string>
     <string name="sort_added">נוספו לאחרונה</string>
-    <string name="sort_used">בשימוש רב</string>
+    <string name="sort_used">בשימוש לאחרונה</string>
     <string name="dash_wx_pick">יש לבחור עיר</string>
     <string name="dash_wx_open">OK פותח את מזג האוויר</string>
     <string name="dash_wx_hilo">ג %1$s  נ %2$s</string>

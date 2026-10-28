@@ -62,7 +62,7 @@ final class Dashboard {
     private final TextView screenTotal, screenTrend;
     private final ViewGroup screenApps;
     private final BarsView bars;
-    private final TextView chip;
+    private final TextView chip, weatherChip;
     private final EqualizerDrawable chipBars;
     private android.animation.ValueAnimator fold;
     private boolean collapsed;
@@ -98,10 +98,11 @@ final class Dashboard {
         }
     };
 
-    private Dashboard(Activity activity, View row, TextView chip, Host host) {
+    private Dashboard(Activity activity, View row, TextView chip, TextView weatherChip, Host host) {
         this.activity = activity;
         this.row = row;
         this.chip = chip;
+        this.weatherChip = weatherChip;
         this.host = host;
         density = activity.getResources().getDisplayMetrics().density;
         prefs = activity.getSharedPreferences("dashboard", Context.MODE_PRIVATE);
@@ -159,8 +160,17 @@ final class Dashboard {
         ViewGroup column = (ViewGroup) gridFrame.getParent();
         View row = LayoutInflater.from(activity).inflate(R.layout.dashboard_cards, column, false);
         column.addView(row, column.indexOfChild(gridFrame));
-        // The top bar's chip for the playing track while the cards are folded away: not focusable, it only shows.
+        // The top bar's chips for the playing track and the weather while the cards are folded away: they only show.
         ViewGroup buttons = activity.findViewById(R.id.topButtons);
+        TextView chip = topChip(activity), weatherChip = topChip(activity);
+        float d = activity.getResources().getDisplayMetrics().density;
+        weatherChip.setMaxWidth(Math.round(200 * d));
+        buttons.addView(weatherChip, 0, weatherChip.getLayoutParams());
+        buttons.addView(chip, 0, chip.getLayoutParams());
+        return new Dashboard(activity, row, chip, weatherChip, host);
+    }
+
+    private static TextView topChip(Activity activity) {
         TextView chip = new TextView(activity, null, 0, R.style.TopButtonBase);
         float d = activity.getResources().getDisplayMetrics().density;
         chip.setFocusable(false);
@@ -171,8 +181,8 @@ final class Dashboard {
         chip.setVisibility(View.GONE);
         ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(42 * d));
         lp.setMarginStart(Math.round(10 * d));
-        buttons.addView(chip, 0, lp);
-        return new Dashboard(activity, row, chip, host);
+        chip.setLayoutParams(lp);
+        return chip;
     }
 
     /** Focus on the card last used (Now playing the first time). False if the row cannot take it. */
@@ -269,6 +279,8 @@ final class Dashboard {
     }
 
     private void showChip() {
+        weatherChip.setVisibility(collapsed && weather.getVisibility() == View.VISIBLE && weatherChip.length() > 0
+                ? View.VISIBLE : View.GONE);
         boolean show = collapsed && track != null;
         chip.setVisibility(show ? View.VISIBLE : View.GONE);
         if (show && track.playing) chipBars.start();
@@ -544,6 +556,9 @@ final class Dashboard {
         }
         int code = w.optInt("code");
         boolean day = w.optBoolean("day", true);
+        // Symbol and temperature only: beside the track's chip, a word more would push the date off the top bar.
+        weatherChip.setText(WeatherText.symbol(code, day) + "  " + WeatherText.degrees(w.optDouble("temp")));
+        showChip();
         icon.setText(WeatherText.symbol(code, day));
         temp.setText(WeatherText.degrees(w.optDouble("temp")));
         cond.setText(WeatherText.word(code));

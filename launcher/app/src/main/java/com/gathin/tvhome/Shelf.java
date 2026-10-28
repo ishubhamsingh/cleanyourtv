@@ -60,7 +60,7 @@ final class Shelf {
     private LinearLayout block, rowView, tabs;
     /** Dashboard: the All apps line under the posters ("All apps · 20 installed", then the order chips); off when 0. */
     private int appsCount;
-    private String appsOrder = Config.GRID_FREQUENT;
+    private String appsOrder = Config.GRID_RECENT;
     private LinearLayout appsRow;
     private String pickOrder;
     private final Runnable pickOnRest = this::pickRested;
@@ -70,7 +70,7 @@ final class Shelf {
             listener.onAppsOrder(pickOrder);
         }
     }
-    private static final String[] ORDERS = {Config.GRID_ALPHABETICAL, Config.GRID_INSTALLED, Config.GRID_FREQUENT};
+    private static final String[] ORDERS = {Config.GRID_ALPHABETICAL, Config.GRID_INSTALLED, Config.GRID_RECENT};
     private static final int[] ORDER_NAMES = {R.string.sort_name, R.string.sort_added, R.string.sort_used};
     private RecyclerView list;
     private PosterAdapter adapter;
@@ -320,6 +320,8 @@ final class Shelf {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.topMargin = Math.round(22 * d);
+        // Room below for the first row's focused tile, which grows and glows past its cell.
+        lp.bottomMargin = Math.round(18 * d);
         lp.setMarginStart(Math.round(10 * d));
         lp.setMarginEnd(Math.round(10 * d));
         block.addView(appsRow, lp);
@@ -346,7 +348,7 @@ final class Shelf {
 
     private void show(int index) {
         Discover.Row row = rows.get(index);
-        adapter.setItems(row.items);
+        adapter.setItems(row.items, "trending".equals(row.id) || "top_apps".equals(row.id));
         int at = Math.max(0, Math.min(lastIndex.getOrDefault(row.id, 0), row.items.size() - 1));
         ((LinearLayoutManager) list.getLayoutManager()).scrollToPositionWithOffset(at, 0);
     }
@@ -415,8 +417,16 @@ final class Shelf {
             setHasStableIds(true);
         }
 
+        /** ranked: the row is a chart (Trending, Top), so its first five carry #1 to #5. */
+        private boolean ranked;
+
         void setItems(List<Discover.Item> items) {
+            setItems(items, false);
+        }
+
+        void setItems(List<Discover.Item> items, boolean ranked) {
             this.items = items;
+            this.ranked = ranked;
             notifyDataSetChanged();
         }
 
@@ -457,6 +467,8 @@ final class Shelf {
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Discover.Item it = items.get(position);
             h.title.setText(it.title);
+            h.rank.setVisibility(ranked && position < 5 ? View.VISIBLE : View.GONE);
+            h.rank.setText("#" + (position + 1));
             h.app.setText(it.playable() ? it.app : it.elsewhere.isEmpty() ? "" : it.elsewhere);
             h.poster.setAlpha(it.playable() || it.appArt != null ? 1f : 0.55f);
             boolean focused = h.poster.isFocused();
@@ -477,7 +489,7 @@ final class Shelf {
         static final class Holder extends RecyclerView.ViewHolder {
             final View poster;
             final ImageView art;
-            final TextView title, app;
+            final TextView title, app, rank;
 
             Holder(View v, PosterAdapter a) {
                 super(v);
@@ -485,6 +497,7 @@ final class Shelf {
                 art = v.findViewById(R.id.art);
                 title = v.findViewById(R.id.posterTitle);
                 app = v.findViewById(R.id.posterApp);
+                rank = v.findViewById(R.id.posterRank);
                 float d = v.getResources().getDisplayMetrics().density;
                 poster.setOutlineProvider(new ViewOutlineProvider() {
                     @Override

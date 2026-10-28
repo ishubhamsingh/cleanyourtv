@@ -187,7 +187,7 @@
     <string name="all_apps_count">%1$d installed</string>
     <string name="sort_name">Name</string>
     <string name="sort_added">Recently added</string>
-    <string name="sort_used">Most used</string>
+    <string name="sort_used">Recently used</string>
     <string name="dash_wx_pick">Pick a city</string>
     <string name="dash_wx_open">OK opens Weather</string>
     <string name="dash_wx_hilo">H %1$s  L %2$s</string>

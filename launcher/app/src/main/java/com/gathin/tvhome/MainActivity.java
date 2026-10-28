@@ -623,7 +623,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.dashboard) {
             // The All apps chips' last pick outlives a restart; until one, the theme's grid_order.
             adapter.setDashboard(true);
-            adapter.setGridOrder(getSharedPreferences("dashboard", MODE_PRIVATE).getString("grid_order", cfg.gridOrder));
+            String order = getSharedPreferences("dashboard", MODE_PRIVATE).getString("grid_order", cfg.gridOrder);
+            // The chips offer Name, Recently added and Recently used: an order from elsewhere shows as Recently used.
+            if (!Config.GRID_ALPHABETICAL.equals(order) && !Config.GRID_INSTALLED.equals(order)) order = Config.GRID_RECENT;
+            adapter.setGridOrder(order);
         }
         discoverOn = cfg.discover && dockRow && !singleRow && Discover.get(this).available();
         if (discoverOn) {
@@ -2518,12 +2521,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (240 * density));
-        if (item.playable()) addSettingsMenuRow(rows, popup, getString(R.string.discover_open_in, item.app), () -> openTitle(item));
-        addSettingsMenuRow(rows, popup, getString(item.liked ? R.string.discover_liked : R.string.discover_like), () -> {
+        if (item.playable()) addSettingsMenuRow(rows, popup, R.drawable.ic_open_app, getString(R.string.discover_open_in, item.app), () -> openTitle(item));
+        addSettingsMenuRow(rows, popup, R.drawable.ic_thumb_up, getString(item.liked ? R.string.discover_liked : R.string.discover_like), () -> {
             discover.like(item);
             Toast.makeText(this, R.string.discover_liked, Toast.LENGTH_SHORT).show();
         });
-        addSettingsMenuRow(rows, popup, getString(R.string.discover_hide), () -> {
+        addSettingsMenuRow(rows, popup, R.drawable.ic_hide, getString(R.string.discover_hide), () -> {
             discover.hide(item);
             Toast.makeText(this, getString(R.string.discover_hidden, item.title), Toast.LENGTH_SHORT).show();
         });
@@ -3823,6 +3826,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {
         addSettingsMenuRow(rows, popup, getString(title), action);
+    }
+
+    /** A menu row with an icon before its title, tinted like the title (dark on the focused white row). */
+    @android.annotation.SuppressLint("ResourceType")   // pill_text is a colour selector kept in drawable/
+    private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int icon, CharSequence title, Runnable action) {
+        addSettingsMenuRow(rows, popup, title, action);
+        ImageView view = rows.getChildAt(rows.getChildCount() - 1).findViewById(R.id.icon);
+        view.setImageResource(icon);
+        view.setImageTintList(getColorStateList(R.drawable.pill_text));
+        view.setDuplicateParentStateEnabled(true);
+        view.setVisibility(View.VISIBLE);
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, CharSequence title, Runnable action) {

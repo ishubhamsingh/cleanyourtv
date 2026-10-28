@@ -30,6 +30,24 @@
             android:layout_height="match_parent"
             android:background="@drawable/poster_scrim" />
 
+        <!-- Dashboard: #1 to #5 on the Trending and Top rows. -->
+        <TextView
+            android:id="@+id/posterRank"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="8dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:background="@drawable/poster_rank"
+            android:textColor="#FFFFFFFF"
+            android:textSize="12sp"
+            android:fontFamily="@string/font_medium"
+            android:includeFontPadding="false"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/posterTitle"
             android:layout_width="match_parent"
