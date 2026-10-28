@@ -207,7 +207,7 @@ final class Dashboard {
         if (collapse == collapsed) return;
         collapsed = collapse;
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) row.getLayoutParams();
-        int full = Math.round(156 * density), margin = Math.round(14 * density);
+        int full = Math.round(166 * density), margin = Math.round(14 * density);
         if (fold != null) fold.cancel();
         float from = lp.height / (float) full, to = collapse ? 0f : 1f;
         fold = android.animation.ValueAnimator.ofFloat(from, to);
