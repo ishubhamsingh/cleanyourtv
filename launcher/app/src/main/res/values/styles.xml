@@ -85,13 +85,18 @@
         <item name="android:fontFeatureSettings">tnum</item>
     </style>
 
-    <style name="DashControl" parent="TopButtonIcon">
+    <!-- The Now playing card's buttons: an icon centred in a frosted circle (not a pill's compound drawable, which
+         sits at the start padding). -->
+    <style name="DashControl">
         <item name="android:layout_width">36dp</item>
         <item name="android:layout_height">36dp</item>
         <item name="android:layout_marginStart">6dp</item>
         <item name="android:layout_marginEnd">6dp</item>
-        <item name="android:paddingStart">9dp</item>
-        <item name="android:paddingEnd">9dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:background">@drawable/pill_bg</item>
+        <item name="android:tint">@drawable/pill_text</item>
         <item name="android:focusable">false</item>
+        <item name="android:clickable">true</item>
     </style>
 </resources>

@@ -76,6 +76,8 @@ final class NowPlaying {
     private MediaSessionManager sessions;
     private final List<MediaController> watched = new ArrayList<>();
     private MediaController current;
+    /** Apps that send real covers: their DISPLAY_ICON (Spotify's is its logo) is never taken for one. */
+    private final java.util.Set<String> coverApps = new java.util.HashSet<>();
 
     private final MediaSessionManager.OnActiveSessionsChangedListener sessionsChanged = list -> watch(list);
 
@@ -197,10 +199,12 @@ final class NowPlaying {
         if (title.isEmpty()) title = appLabel(c.getPackageName());
         Bitmap art = null;
         if (m != null) {
-            // The cover before the display icon: Spotify puts its own logo in DISPLAY_ICON.
+            // The cover before the display icon: Spotify puts its own logo in DISPLAY_ICON, and between covers it
+            // sends updates with only that, which made the card flash the logo.
             art = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
             if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_ART);
-            if (art == null) art = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
+            if (art != null) coverApps.add(c.getPackageName());
+            else if (!coverApps.contains(c.getPackageName())) art = m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON);
         }
         PlaybackState s = c.getPlaybackState();
         long duration = m == null ? 0 : m.getLong(MediaMetadata.METADATA_KEY_DURATION);

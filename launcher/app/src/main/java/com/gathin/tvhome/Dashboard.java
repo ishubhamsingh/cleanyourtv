@@ -45,6 +45,9 @@ final class Dashboard {
         /** The focused view is below the dock (Discover, the app rows): the cards fold away. */
         boolean belowDock(View focused);
 
+        /** The cards start folding or unfolding: the tiles are about to move without the grid scrolling. */
+        void onFoldStart();
+
         /** The cards finished folding or unfolding: what sits on the grid's tiles must be placed again. */
         void onFolded();
     }
@@ -64,7 +67,8 @@ final class Dashboard {
     private final View[] cards;
     private final View[] buttons;
     private final ImageView art;
-    private final TextView app, title, artist, pos, dur, play, up, net, rate, mem, disk;
+    private final TextView app, title, artist, pos, dur, up, net, rate, mem, disk;
+    private final ImageView play;
     private final ProgressBar progress, memBar, diskBar;
     private final SparklineView spark;
     private final SharedPreferences prefs;
@@ -74,7 +78,10 @@ final class Dashboard {
     private long rxPrev = -1, rxAt;
     private int ticks;
     private boolean running;
-
+    /** The cover on screen, kept while the next track's arrives (apps send the title first, the art a moment later). */
+    private android.graphics.Bitmap shownArt;
+    private String shownArtPkg;
+    private final Runnable artFallback;
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
@@ -129,6 +136,10 @@ final class Dashboard {
             }
         });
         art.setClipToOutline(true);
+        artFallback = () -> {
+            shownArt = null;
+            if (track != null && track.art == null) art.setImageDrawable(icon(track.pkg));
+        };
         chipBars = new EqualizerDrawable(Math.round(18 * density));
         chip.setCompoundDrawablesRelativeWithIntrinsicBounds(chipBars, null, null, null);
         setUpKeys();
@@ -191,6 +202,8 @@ final class Dashboard {
         progress.setVisibility(has ? View.VISIBLE : View.GONE);
         controls.setVisibility(has ? View.VISIBLE : View.GONE);
         if (!has) {
+            handler.removeCallbacks(artFallback);
+            shownArt = null;
             leaveControls();
             showChip();
             String last = prefs.getString("app", "com.spotify.tv.android");
@@ -205,9 +218,17 @@ final class Dashboard {
         app.setText(t.app);
         title.setText(t.title);
         artist.setText(t.artist);
-        if (t.art != null) art.setImageBitmap(t.art);
-        else art.setImageDrawable(icon(t.pkg));
-        play.setCompoundDrawablesRelativeWithIntrinsicBounds(t.playing ? R.drawable.ic_pause : R.drawable.ic_play, 0, 0, 0);
+        handler.removeCallbacks(artFallback);
+        if (t.art != null) {
+            if (t.art != shownArt) art.setImageBitmap(t.art);
+            shownArt = t.art;
+            shownArtPkg = t.pkg;
+        } else if (shownArt != null && t.pkg.equals(shownArtPkg)) {
+            handler.postDelayed(artFallback, 3000);     // no cover yet: keep the last one, the app icon after 3 s
+        } else {
+            art.setImageDrawable(icon(t.pkg));
+        }
+        play.setImageResource(t.playing ? R.drawable.ic_pause : R.drawable.ic_play);
         updateProgress();
         showChip();
     }
@@ -222,6 +243,7 @@ final class Dashboard {
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) row.getLayoutParams();
         int full = Math.round(166 * density), margin = Math.round(14 * density);
         if (fold != null) fold.cancel();
+        host.onFoldStart();
         float from = lp.height / (float) full, to = collapse ? 0f : 1f;
         fold = android.animation.ValueAnimator.ofFloat(from, to);
         fold.setDuration(220);
@@ -421,7 +443,22 @@ final class Dashboard {
             k[i] = kinds.get(i);
             t[i] = times.get(i);
         }
-        return ScreenTime.tally(pkgs.toArray(new String[0]), k, t, dayStarts, now, counted);
+        ScreenTime.Tally tally = ScreenTime.tally(pkgs.toArray(new String[0]), k, t, dayStarts, now, counted);
+        // Music behind Home (NowPlayingListener's log) counts too.
+        java.util.List<java.util.Map<String, Long>> listening = new java.util.ArrayList<>();
+        java.util.Map<String, ?> log = context.getSharedPreferences(ListeningLog.PREFS, Context.MODE_PRIVATE).getAll();
+        for (int i = 0; i < DAYS; i++) {
+            String day = today.minusDays(DAYS - 1 - i) + "|";
+            java.util.Map<String, Long> perApp = new java.util.HashMap<>();
+            for (java.util.Map.Entry<String, ?> entry : log.entrySet()) {
+                if (entry.getKey().startsWith(day) && entry.getValue() instanceof Long) {
+                    perApp.put(entry.getKey().substring(day.length()), (Long) entry.getValue());
+                }
+            }
+            listening.add(perApp);
+        }
+        ScreenTime.addListening(tally, listening);
+        return tally;
     }
 
     private void showScreenTime(ScreenTime.Tally tally) {

@@ -192,6 +192,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Dashboard dashboard;
     /** config aurora_background: the drifting colour backdrop; null when off. */
     private AuroraView aurora;
+    /** The dashboard's cards are folding or unfolding: the glass waits, and is placed when they settle. */
+    private boolean dashFolding;
     private EqualizerDrawable equalizer;
     /** The dock column Down left from (or the grid column Up left from), for the way back out of the rows. */
     private int shelfReturnColumn;
@@ -756,8 +758,21 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
 
             @Override
+            public void onFoldStart() {
+                // Hide the glass while the tiles move: placed again (snapped, then faded in) once they settle,
+                // instead of gliding from the old spot across the cards.
+                springX.cancel();
+                springY.cancel();
+                glass.animate().cancel();
+                glass.setAlpha(0f);
+                glassShown = false;
+                dashFolding = true;
+            }
+
+            @Override
             public void onFolded() {
                 // The tiles moved without the grid scrolling: place the glass on the focused one again.
+                dashFolding = false;
                 grid.post(() -> {
                     View focused = getCurrentFocus();
                     View item = focused == null ? null : grid.findContainingItemView(focused);
@@ -1754,7 +1769,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             glassAccent = accent;
             glass.setAccent(accent);
         }
-        if (!glassShown) {
+        if (dashFolding) {
+            // The tile is about to move with the dashboard's cards: Dashboard.Host.onFolded places the glass.
+        } else if (!glassShown) {
             springX.cancel();
             springY.cancel();
             glass.setTranslationX(x);
@@ -2194,7 +2211,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void showTrack(NowPlaying.Track t) {
-        if (aurora != null) aurora.setArt(t == null ? null : t.art);
+        // A new track's cover comes a moment after its title: keep the colours until it does.
+        if (aurora != null && (t == null || t.art != null)) aurora.setArt(t == null ? null : t.art);
         if (dashboard != null) {   // the Now playing card in the row replaces the music button and its overlay
             dashboard.showTrack(t, nowPlaying);
             return;

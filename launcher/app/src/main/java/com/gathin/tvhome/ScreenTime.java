@@ -20,11 +20,15 @@ final class ScreenTime {
     static final class Tally {
         /** Foreground time (ms) per day, oldest first; the last is today. */
         final long[] days;
-        /** Today's foreground time (ms) per app. */
-        final Map<String, Long> today = new HashMap<>();
+        /** Time (ms) per app for each day; the last is today's. */
+        final List<Map<String, Long>> perDay = new ArrayList<>();
+        /** Today's time (ms) per app. */
+        final Map<String, Long> today;
 
         Tally(int dayCount) {
             days = new long[dayCount];
+            for (int i = 0; i < dayCount; i++) perDay.add(new HashMap<>());
+            today = perDay.get(dayCount - 1);
         }
     }
 
@@ -70,7 +74,23 @@ final class ScreenTime {
             long overlap = Math.min(to, end) - Math.max(from, start);
             if (overlap <= 0) continue;
             t.days[d] += overlap;
-            if (d == n - 1) t.today.merge(pkg, overlap, Long::sum);
+            t.perDay.get(d).merge(pkg, overlap, Long::sum);
+        }
+    }
+
+    /**
+     * Adds background listening (per day, oldest first, as in the tally): each app counts its listening or its time
+     * on screen, whichever is longer, as music on screen is often both.
+     */
+    static void addListening(Tally t, List<Map<String, Long>> listening) {
+        for (int d = 0; d < t.days.length && d < listening.size(); d++) {
+            Map<String, Long> onScreen = t.perDay.get(d);
+            for (Map.Entry<String, Long> e : listening.get(d).entrySet()) {
+                long shown = onScreen.getOrDefault(e.getKey(), 0L);
+                if (e.getValue() <= shown) continue;
+                t.days[d] += e.getValue() - shown;
+                onScreen.put(e.getKey(), e.getValue());
+            }
         }
     }
 

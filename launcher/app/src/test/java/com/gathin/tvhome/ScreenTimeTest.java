@@ -74,4 +74,18 @@ public class ScreenTimeTest {
         assertEquals("d", top.get(1).getKey());
         assertEquals("a", top.get(2).getKey());
     }
+
+    @Test
+    public void listeningCountsWhenLongerThanTheTimeOnScreen() {
+        ScreenTime.Tally t = ScreenTime.tally(
+                new String[]{"yt", "yt"}, new int[]{ScreenTime.START, ScreenTime.STOP},
+                new long[]{25 * H, 25 * H + 5 * M}, DAYS, 30 * H, new HashSet<>(Arrays.asList("yt", "nf", "sp")));
+        Map<String, Long> today = new java.util.HashMap<>();
+        today.put("sp", 40 * M);      // Spotify behind Home: never on screen
+        today.put("yt", 2 * M);       // less than YouTube's time on screen: no change
+        ScreenTime.addListening(t, Arrays.asList(new java.util.HashMap<>(), today));
+        assertEquals(45 * M, t.days[1]);
+        assertEquals(Long.valueOf(40 * M), t.today.get("sp"));
+        assertEquals(Long.valueOf(5 * M), t.today.get("yt"));
+    }
 }

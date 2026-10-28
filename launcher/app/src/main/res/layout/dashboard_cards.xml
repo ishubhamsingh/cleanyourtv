@@ -92,9 +92,9 @@
                 android:gravity="center"
                 android:clipChildren="false">
 
-                <TextView android:id="@+id/dashPrev" style="@style/DashControl" android:drawableStart="@drawable/ic_skip_previous" android:contentDescription="@null" />
-                <TextView android:id="@+id/dashPlay" style="@style/DashControl" android:drawableStart="@drawable/ic_pause" android:contentDescription="@null" />
-                <TextView android:id="@+id/dashNext" style="@style/DashControl" android:drawableStart="@drawable/ic_skip_next" android:contentDescription="@null" />
+                <ImageView android:id="@+id/dashPrev" style="@style/DashControl" android:src="@drawable/ic_skip_previous" android:contentDescription="@null" />
+                <ImageView android:id="@+id/dashPlay" style="@style/DashControl" android:src="@drawable/ic_pause" android:contentDescription="@null" />
+                <ImageView android:id="@+id/dashNext" style="@style/DashControl" android:src="@drawable/ic_skip_next" android:contentDescription="@null" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

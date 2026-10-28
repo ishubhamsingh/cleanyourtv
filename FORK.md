@@ -143,7 +143,7 @@ the big app name and artwork above the dock and the stats line:
 - **Now playing:** album art, app, title, artist and a progress bar with times. **OK** moves onto previous /
   play-pause / next; **Up**, **Down** or **Back** leaves them. **Hold OK** opens the app's player. With nothing
   playing it says so, and OK opens the music app you used last.
-- **Screen time:** today's time in your TV apps, the last seven days as bars, today against the days before (once
+- **Screen time:** today's time in your TV apps (on screen, and music playing behind Home: each app counts whichever is longer), the last seven days as bars, today against the days before (once
   the TV has three days of history), and the three apps you used most today. Grant it once:
   `adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow`; without it the card says so.
 - **System:** download speed now and over the last minute, the Wi-Fi band (or Ethernet), uptime, memory and
