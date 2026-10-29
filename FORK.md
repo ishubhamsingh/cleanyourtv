@@ -213,6 +213,23 @@ with `adb shell input` do not go through the helper; test with the real remote.
   higher when needed so the app name under it is never cut off.
 - **A calmer top bar:** `"show_network_pill": false` and `"icon_only_inputs": true` leave only round icons.
 
+## How heavy is it?
+
+Measured with `tools/bench.py` on the BRAVIA 4K AE2 (Google TV 14, 4 cores, 4.5 GB), Home on screen and untouched,
+each setup pushed with the Sony profile:
+
+| Setup | Launcher memory (PSS) | Launcher CPU at idle | Janky frames |
+|---|---|---|---|
+| `themes/glass` (upstream's look, no dashboard) | 62 MB | 0% | 0.1% |
+| `my-glass` with `"dashboard_cards": []` and Discover off | 64 MB | 0% | 0% |
+| `my-glass` (all four cards, Discover, wallpapers) | 73 MB | 2% | 1.4% |
+| `my-aurora` (the same, with the drifting album-art colours) | 76 MB | 13% | 0% |
+
+Memory barely moves; the aurora's cost is CPU, because the whole screen is composed again for every frame it
+draws (12.5 frames a second; at 20 to 30 it took 21% of a core). On a TV with 1 to 2 GB and a slower
+chip, prefer `my-glass`; under 1 GB, the plain look (see the README's table). The cards update once a second and
+only while Home is on screen; nothing runs while an app is open.
+
 ## Troubleshooting
 
 - **Netflix opens on the profile screen and forgets the title.** Fixed: the link carries `source=30`, which

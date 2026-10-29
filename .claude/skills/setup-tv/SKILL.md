@@ -46,7 +46,7 @@ TV_HOST=<ip> tools/venv/bin/python -I tools/tv.py 'getprop ro.build.version.sdk;
 |---|---|
 | SDK below 26 (Android 7 or older) | **Stop.** The launcher needs Android 8. Say so; don't lower `minSdk`. |
 | MemTotal under 1 GB (< 1,000,000 kB) | **Warn clearly:** the dashboard, Discover and the aurora background are too heavy here. Recommend upstream's plain look: skip step 7's dashboard themes (use `themes/glass`), skip Discover. Let them decide. |
-| 1 to 2 GB | Fine, but recommend `themes/my-glass` (wallpapers) over `my-aurora` (animated), and say Discover's posters use some memory. |
+| 1 to 2 GB | Fine, but recommend `themes/my-glass` (wallpapers) over `my-aurora` (its animation keeps about 13% of a core busy on Home; FORK.md "How heavy is it?" has the numbers). Memory is similar either way (62 to 76 MB). |
 | 2 GB or more | Everything. |
 | Samsung Tizen, LG webOS, Fire TV | Not supported: stop and say so. |
 
