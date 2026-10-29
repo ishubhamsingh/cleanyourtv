@@ -34,6 +34,12 @@ public class DashboardTextTest {
     }
 
     @Test
+    public void hoursNeverTurnIntoDays() {
+        assertEquals("26h 10m", DashboardText.hours((26 * 60 + 10) * 60_000L));
+        assertEquals("42m", DashboardText.hours(42 * 60_000L));
+    }
+
+    @Test
     public void uptimeKeepsTheTwoLargestUnits() {
         assertEquals("12m", DashboardText.uptime(12 * 60_000));
         assertEquals("4h 12m", DashboardText.uptime((4 * 60 + 12) * 60_000L));

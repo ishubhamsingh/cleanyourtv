@@ -95,5 +95,22 @@ public class ForecastTest {
         assertEquals(5, card.getJSONArray("hours").length());
         assertEquals("21:00", card.getJSONArray("hours").getJSONObject(0).getString("time"));
         assertEquals(61, card.getJSONArray("hours").getJSONObject(4).getInt("code"));
+        assertEquals(false, card.has("days"));     // a reply without the daily codes: no 3-day panel
+    }
+
+    @Test
+    public void cardHasTodayAndTheNextTwoDays() throws Exception {
+        org.json.JSONObject reply = new org.json.JSONObject("{\"current\":{\"temperature_2m\":25,\"relative_humidity_2m\":60,"
+                + "\"weather_code\":1,\"is_day\":1},"
+                + "\"daily\":{\"time\":[\"2026-10-29\",\"2026-10-30\",\"2026-10-31\"],\"weather_code\":[1,61,3],"
+                + "\"temperature_2m_max\":[29,24,27],\"temperature_2m_min\":[19,18,null],"
+                + "\"precipitation_probability_max\":[5,80,null]},"
+                + "\"hourly\":{\"time\":[\"2026-10-29T11:00\"],\"temperature_2m\":[25],\"weather_code\":[1]}}");
+        org.json.JSONArray days = Forecast.card(reply).getJSONArray("days");
+        assertEquals(2, days.length());                 // the third day came back without a low: stop there
+        assertEquals("2026-10-30", days.getJSONObject(1).getString("date"));
+        assertEquals(61, days.getJSONObject(1).getInt("code"));
+        assertEquals(80, days.getJSONObject(1).getInt("rain"));
+        assertEquals(24.0, days.getJSONObject(1).getDouble("hi"), 1e-9);
     }
 }

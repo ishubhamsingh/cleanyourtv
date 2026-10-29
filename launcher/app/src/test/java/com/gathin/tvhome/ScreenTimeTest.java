@@ -76,6 +76,17 @@ public class ScreenTimeTest {
     }
 
     @Test
+    public void theWeekAddsEveryDayPerApp() {
+        ScreenTime.Tally t = ScreenTime.tally(
+                new String[]{"nf", "nf", "yt", "yt", "nf"},
+                new int[]{ScreenTime.START, ScreenTime.STOP, ScreenTime.START, ScreenTime.STOP, ScreenTime.START},
+                new long[]{H, 2 * H, 25 * H, 25 * H + 30 * M, 26 * H}, DAYS, 26 * H + 15 * M, APPS);
+        Map<String, Long> week = ScreenTime.week(t);
+        assertEquals(Long.valueOf(H + 15 * M), week.get("nf"));       // an hour yesterday, 15 minutes today
+        assertEquals(Long.valueOf(30 * M), week.get("yt"));
+    }
+
+    @Test
     public void listeningCountsWhenLongerThanTheTimeOnScreen() {
         ScreenTime.Tally t = ScreenTime.tally(
                 new String[]{"yt", "yt"}, new int[]{ScreenTime.START, ScreenTime.STOP},

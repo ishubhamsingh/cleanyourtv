@@ -22,7 +22,7 @@ own. Upstream's full reference (the 290+ tested TV lists, every tool, every them
 
 | | |
 |---|---|
-| **Dashboard** | A row of glass cards above your apps: **Now playing** (album art, progress, controls), **Weather** (now, high/low, the next five hours), **System** (live download speed, Wi-Fi band, memory, storage), **Screen time** (today, the week, your top apps). Scroll down and they fold away, leaving the track and the weather in the header. Switch off the cards you don't want, or all of them. |
+| **Dashboard** | A row of glass cards above your apps: **Now playing** (album art, progress, controls, and what's up next when the app shares its queue), **Weather** (now, high/low, the next five hours; OK for three days), **System** (live download speed, Wi-Fi band, memory, storage), **Screen time** (today, the week, your top apps; OK for the whole week). Scroll down and they fold away, leaving the track and the weather in the header. Switch off the cards you don't want, or all of them. |
 | **Discover** | *For you*, *Trending*, *Top* and *New on your apps*: only titles on streaming apps you have installed. OK opens the title itself in its app. Hold OK for *More like this* or *Not interested*; your taste can be backed up to your TMDB account. Search finds apps and titles. |
 | **All apps** | Every app under the posters, sorted by Name, Recently added or Recently used (move onto a chip and it sorts). New installs carry a *New* badge. |
 | **Now playing everywhere** | The music playing behind Home (Spotify, YouTube Music, ...) on the dashboard, and on the clock screensaver over drifting colours taken from the album art, only while something plays. |

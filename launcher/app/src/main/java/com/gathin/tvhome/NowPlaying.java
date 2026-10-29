@@ -32,9 +32,12 @@ final class NowPlaying {
         /** Position (ms) at `at` (elapsedRealtime), the speed it moves at, and the track's length; 0 when unknown. */
         final long position, at, duration;
         final float speed;
+        /** The queue's next item ("Title · Artist"), or "" when the app shares no queue. */
+        final String upNext;
 
         Track(String pkg, String app, String title, String artist, Bitmap art, boolean playing, long position, long at,
-              float speed, long duration) {
+              float speed, long duration, String upNext) {
+            this.upNext = upNext;
             this.pkg = pkg;
             this.app = app;
             this.title = title;
@@ -89,6 +92,11 @@ final class NowPlaying {
 
         @Override
         public void onMetadataChanged(MediaMetadata metadata) {
+            update();
+        }
+
+        @Override
+        public void onQueueChanged(java.util.List<android.media.session.MediaSession.QueueItem> queue) {
             update();
         }
 
@@ -210,7 +218,23 @@ final class NowPlaying {
         long duration = m == null ? 0 : m.getLong(MediaMetadata.METADATA_KEY_DURATION);
         return new Track(c.getPackageName(), appLabel(c.getPackageName()), title, artist, art,
                 s != null && rank(s.getState()) == 2, s == null ? -1 : s.getPosition(),
-                s == null ? 0 : s.getLastPositionUpdateTime(), s == null ? 0f : s.getPlaybackSpeed(), duration);
+                s == null ? 0 : s.getLastPositionUpdateTime(), s == null ? 0f : s.getPlaybackSpeed(), duration,
+                upNext(c.getQueue(), s == null ? UpNext.UNKNOWN : s.getActiveQueueItemId()));
+    }
+
+    private static String upNext(java.util.List<android.media.session.MediaSession.QueueItem> queue, long active) {
+        if (queue == null || queue.isEmpty()) return "";
+        int n = queue.size();
+        long[] ids = new long[n];
+        String[] titles = new String[n], subs = new String[n];
+        for (int i = 0; i < n; i++) {
+            android.media.session.MediaSession.QueueItem item = queue.get(i);
+            ids[i] = item.getQueueId();
+            CharSequence t = item.getDescription().getTitle(), sub = item.getDescription().getSubtitle();
+            titles[i] = t == null ? null : t.toString();
+            subs[i] = sub == null ? null : sub.toString();
+        }
+        return UpNext.after(ids, titles, subs, active);
     }
 
     private static String text(MediaMetadata m, String... keys) {

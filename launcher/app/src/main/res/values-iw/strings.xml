@@ -47,6 +47,16 @@
     <string name="launcher_settings">הגדרות מסך הבית</string>
     <string name="native_settings">הגדרות היצרן</string>
     <string name="columns_label">אפליקציות בשורה</string>
+    <string name="dash_week_title">זמן מסך השבוע</string>
+    <string name="dash_week_sub">ממוצע יומי %1$s  ·  היום %2$s</string>
+    <string name="dash_week_apps">הכי בשימוש השבוע</string>
+    <string name="dash_today">היום</string>
+    <string name="dash_tomorrow">מחר</string>
+    <string name="dash_panel_close">OK או חזרה לסגירה</string>
+    <string name="dash_wx_rain">גשם %1$s</string>
+    <string name="dash_wx_soon">תחזית שלושת הימים תגיע בעדכון הבא של אפליקציית מזג האוויר (תוך חצי שעה).</string>
+    <string name="dash_wx_hold">לחיצה ארוכה על OK בכרטיס לשינוי העיר</string>
+    <string name="dash_up_next">הבא: %1$s</string>
     <string name="columns_auto">אוטומטי</string>
     <string name="dashboard_cards_state">כרטיסי לוח הבקרה: %1$s</string>
     <string name="dashboard_cards_state_title">כרטיסי לוח הבקרה</string>
@@ -184,7 +194,6 @@
     <string name="dash_nothing">שום דבר לא מתנגן</string>
     <string name="dash_ok_opens">OK פותח את %s</string>
     <string name="dash_screen">זמן מסך</string>
-    <string name="dash_today">היום</string>
     <string name="dash_vs_week">%1$s לעומת שבוע שעבר</string>
     <string name="dash_usage_off">גישה לנתוני שימוש כבויה</string>
     <string name="dash_usage_hint">יש לאפשר פעם אחת דרך ADB, ראו FORK.md</string>

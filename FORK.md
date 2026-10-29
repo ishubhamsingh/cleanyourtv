@@ -145,14 +145,23 @@ the big app name and artwork above the dock and the stats line:
 - **Now playing:** album art, app, title, artist and a progress bar with times. **OK** moves onto previous /
   play-pause / next; **Up**, **Down** or **Back** leaves them. **Hold OK** opens the app's player. With nothing
   playing it says so, and OK opens the music app you used last.
+- **Up next:** an app that shares its queue with Android shows the next track on the Now playing card's top line.
+  Spotify and YouTube on Google TV share none (checked on the BRAVIA), so for them the line stays hidden.
 - **Screen time:** today's time in your TV apps (on screen, and music playing behind Home: each app counts whichever is longer), the last seven days as bars, today against the days before (once
   the TV has three days of history), and the three apps you used most today. Grant it once:
-  `adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow`; without it the card says so.
+  `adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow`; without it the card says so. **OK** opens the week:
+  big bars per day, the week's total and daily average, and the five apps used most this week.
 - **Weather** (with the Weather add-on installed, `addons/weather`, built and installed like Discover's extension):
   your city, the temperature and conditions, today's high and low and the next five hours, from Open-Meteo (free, no
-  key). Pick the city once by opening the Weather app (OK on the card). Offline it shows when it last updated.
+  key). Pick the city once in the Weather app (**hold OK** on the card opens it). **OK** opens today and the next two
+  days: conditions, high and low and the chance of rain. Offline it shows when it last updated.
 - **System:** download speed now and over the last minute, the Wi-Fi band (or Ethernet), uptime, memory and
   storage. OK opens storage settings. CPU and temperature are not shown: Android hides both from apps.
+
+<p align="center">
+  <img src="docs/fork/screen-time-panel.jpg" width="49%" alt="OK on Screen time: the week as big bars per day with today highlighted, the week's total and daily average, and the most used apps with their share">
+  <img src="docs/fork/weather-panel.jpg" width="49%" alt="OK on Weather: now, then today, tomorrow and Saturday with conditions, high and low and the chance of rain">
+</p>
 
 Under the Discover posters an **All apps** line counts your apps and offers three orders for the grid below:
 **Name**, **Recently added** and **Recently used** (remembered across restarts). Apps installed in the last week carry a

@@ -40,7 +40,9 @@ public class CardProvider extends ContentProvider {
             String name = place.getString("name", "");
             long updated = cache.getLong("updated", 0);
             boolean samePlace = name.equals(cache.getString("place", ""));
-            if (!samePlace || System.currentTimeMillis() - updated > FRESH_MS) {
+            // A card cached by an older version has no "days" for the launcher's 3-day panel: fetch again.
+            boolean oldFormat = !cache.getString("json", "").contains("\"days\"");
+            if (!samePlace || oldFormat || System.currentTimeMillis() - updated > FRESH_MS) {
                 try {
                     JSONObject fresh = Forecast.fetchCard(Double.longBitsToDouble(place.getLong("lat", 0)),
                             Double.longBitsToDouble(place.getLong("lon", 0)));

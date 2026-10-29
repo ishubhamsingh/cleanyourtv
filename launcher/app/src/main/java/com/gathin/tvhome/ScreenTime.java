@@ -110,6 +110,13 @@ final class ScreenTime {
         return (int) Math.round((days[n - 1] - avg) * 100 / avg);
     }
 
+    /** Time (ms) per app over all the tally's days (the week view's list). */
+    static Map<String, Long> week(Tally t) {
+        Map<String, Long> out = new HashMap<>();
+        for (Map<String, Long> day : t.perDay) for (Map.Entry<String, Long> e : day.entrySet()) out.merge(e.getKey(), e.getValue(), Long::sum);
+        return out;
+    }
+
     /** The {@code k} apps with the most time, most first. */
     static List<Map.Entry<String, Long>> top(Map<String, Long> perApp, int k) {
         List<Map.Entry<String, Long>> list = new ArrayList<>(perApp.entrySet());

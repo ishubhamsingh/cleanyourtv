@@ -42,6 +42,12 @@ final class DashboardText {
         return m + "m";
     }
 
+    /** A length of time in hours and minutes, never days (a week's total): "26h 10m", "42m". */
+    static String hours(long ms) {
+        long m = Math.max(0, ms) / 60_000, h = m / 60;
+        return h > 0 ? h + "h " + (m % 60) + "m" : m + "m";
+    }
+
     /** Used of total in GB: "2.2 / 4.5 GB", "18.4 / 32 GB" (a whole total drops its ".0"). */
     static String usedOfTotal(long usedBytes, long totalBytes) {
         double used = Math.max(0, usedBytes) / (double) GB, total = Math.max(0, totalBytes) / (double) GB;

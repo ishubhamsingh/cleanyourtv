@@ -49,6 +49,16 @@
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
+    <string name="dash_week_title">Screen time this week</string>
+    <string name="dash_week_sub">Daily average %1$s  ·  Today %2$s</string>
+    <string name="dash_week_apps">Most used this week</string>
+    <string name="dash_today">Today</string>
+    <string name="dash_tomorrow">Tomorrow</string>
+    <string name="dash_panel_close">OK or Back closes</string>
+    <string name="dash_wx_rain">Rain %1$s</string>
+    <string name="dash_wx_soon">The three-day forecast arrives with the Weather app\'s next update (within half an hour).</string>
+    <string name="dash_wx_hold">Hold OK on the card to change the city</string>
+    <string name="dash_up_next">Next: %1$s</string>
     <string name="columns_auto">Auto</string>
     <string name="dashboard_cards_state">Dashboard cards: %1$s</string>
     <string name="dashboard_cards_state_title">Dashboard cards</string>
@@ -188,7 +198,6 @@
     <string name="dash_nothing">Nothing playing</string>
     <string name="dash_ok_opens">OK opens %s</string>
     <string name="dash_screen">Screen time</string>
-    <string name="dash_today">Today</string>
     <string name="dash_vs_week">%1$s vs last week</string>
     <string name="dash_usage_off">Usage access is off</string>
     <string name="dash_usage_hint">Allow it once over ADB, see FORK.md</string>

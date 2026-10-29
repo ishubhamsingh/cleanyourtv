@@ -21,7 +21,8 @@ sky-blue glow; on any other Android TV home it is an ordinary app.
 ## On the Clean Your TV dashboard
 
 With the launcher's `dashboard` on, a Weather card shows the city picked here: now, today's high and low and the
-next five hours. The launcher has no internet access; it reads this app's card provider
+next five hours. OK on the card opens today and the next two days (conditions, high and low, chance of rain); holding
+OK opens this app to change the city. The launcher has no internet access; it reads this app's card provider
 (`io.github.sumyabazar1.weather.card`), which fetches Open-Meteo at most every 30 minutes and only when the card asks.
 Both apps must be built on the same machine (same signing key): the provider is behind a signature permission.
 

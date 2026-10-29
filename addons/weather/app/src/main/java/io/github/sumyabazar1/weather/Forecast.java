@@ -138,15 +138,17 @@ final class Forecast {
 
     /**
      * The Clean Your TV dashboard's Weather card (CardProvider): now, today's high and low and the next five hours,
-     * as JSON: {"temp", "code", "day", "hi", "lo", "hours": [{"time": "21:00", "temp", "code"}, ...]}, temperatures in
-     * °C, codes corrected like the page's.
+     * as JSON: {"temp", "code", "day", "hi", "lo", "hours": [{"time": "21:00", "temp", "code"}, ...],
+     * "days": [{"date": "2026-10-29", "code", "hi", "lo", "rain"}, ...]}, temperatures in °C, codes corrected like the
+     * page's, "days" being today and the next two (the card's 3-day panel), "rain" the chance in percent.
      */
     static JSONObject fetchCard(double latitude, double longitude) throws IOException, JSONException {
         String where = String.format(Locale.ROOT, "latitude=%.4f&longitude=%.4f", latitude, longitude);
         JSONObject reply = get("https://api.open-meteo.com/v1/forecast?" + where + "&models=icon_seamless"
                 + "&current=temperature_2m,relative_humidity_2m,weather_code,is_day"
                 + "&hourly=temperature_2m,weather_code&forecast_hours=6"
-                + "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1");
+                + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                + "&timezone=auto&forecast_days=3");
         return card(reply);
     }
 
@@ -172,7 +174,23 @@ final class Forecast {
             hours.put(new JSONObject().put("time", t.substring(t.indexOf('T') + 1))
                     .put("temp", temps.getDouble(i)).put("code", snowIfCold(codes.getInt(i), temps.getDouble(i), 100)));
         }
-        return out.put("hours", hours);
+        out.put("hours", hours);
+        // The 3-day panel; an older reply without the daily codes simply has no "days".
+        if (daily.has("weather_code") && daily.has("time")) {
+            JSONArray dates = daily.getJSONArray("time"), dayCodes = daily.getJSONArray("weather_code"),
+                    max = daily.getJSONArray("temperature_2m_max"), min = daily.getJSONArray("temperature_2m_min");
+            JSONArray rain = daily.optJSONArray("precipitation_probability_max");
+            JSONArray days = new JSONArray();
+            for (int i = 0; i < dates.length() && days.length() < 3; i++) {
+                if (dayCodes.isNull(i) || max.isNull(i) || min.isNull(i)) break;
+                JSONObject d = new JSONObject().put("date", dates.getString(i)).put("code", dayCodes.getInt(i))
+                        .put("hi", max.getDouble(i)).put("lo", min.getDouble(i));
+                if (rain != null && !rain.isNull(i)) d.put("rain", rain.getInt(i));
+                days.put(d);
+            }
+            out.put("days", days);
+        }
+        return out;
     }
 
     /**

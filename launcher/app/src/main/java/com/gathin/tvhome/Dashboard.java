@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -71,7 +72,7 @@ final class Dashboard {
     private final java.util.Set<String> shown;
     private final View[] buttons;
     private final ImageView art;
-    private final TextView app, title, artist, pos, dur, up, net, rate, mem, disk;
+    private final TextView app, title, artist, pos, dur, up, net, rate, mem, disk, upNext;
     private final ImageView play;
     private final ProgressBar progress, memBar, diskBar;
     private final SparklineView spark;
@@ -127,6 +128,7 @@ final class Dashboard {
         for (int i = 0; i < cards.length; i++) if (!shown.contains(names[i])) cards[i].setVisibility(View.GONE);
         art = row.findViewById(R.id.dashArt);
         app = row.findViewById(R.id.dashApp);
+        upNext = row.findViewById(R.id.dashUpNext);
         title = row.findViewById(R.id.dashTitle);
         artist = row.findViewById(R.id.dashArtist);
         pos = row.findViewById(R.id.dashPos);
@@ -261,6 +263,7 @@ final class Dashboard {
         progress.setVisibility(has ? View.VISIBLE : View.GONE);
         controls.setVisibility(has ? View.VISIBLE : View.GONE);
         if (!has) {
+            upNext.setVisibility(View.GONE);
             handler.removeCallbacks(artFallback);
             shownArt = null;
             leaveControls();
@@ -275,6 +278,8 @@ final class Dashboard {
         prefs.edit().putString("app", t.pkg).apply();
         chip.setText(t.artist.isEmpty() ? t.title : t.title + "  ·  " + t.artist);
         app.setText(t.app);
+        upNext.setText(t.upNext.isEmpty() ? "" : activity.getString(R.string.dash_up_next, t.upNext));
+        upNext.setVisibility(t.upNext.isEmpty() ? View.GONE : View.VISIBLE);
         title.setText(t.title);
         artist.setText(t.artist);
         handler.removeCallbacks(artFallback);
@@ -425,6 +430,9 @@ final class Dashboard {
     // ---- Screen time ----------------------------------------------------------------------------
 
     private static final int DAYS = 7;
+    /** The last tally and weather shown, for the cards' panels (OK on Screen time, OK on Weather). */
+    private ScreenTime.Tally lastTally;
+    private org.json.JSONObject lastWeather;
     private static final int[] DOTS = {0xFFF87171, 0xFFFBBF24, 0xFF60A5FA};
 
     @SuppressWarnings("deprecation")
@@ -524,6 +532,7 @@ final class Dashboard {
     }
 
     private void showScreenTime(ScreenTime.Tally tally) {
+        lastTally = tally;
         screenTotal.setText(DashboardText.uptime(tally.days[DAYS - 1]));
         bars.setValues(tally.days);
         Integer change = ScreenTime.versusLastWeek(tally.days);
@@ -557,7 +566,176 @@ final class Dashboard {
         }
     }
 
+    /** OK on Screen time: the week as big bars with the days under them, and the week's most used apps. */
+    private void showWeek(ScreenTime.Tally tally) {
+        LinearLayout col = DashPanel.column(activity);
+        long total = 0;
+        for (long day : tally.days) total += day;
+        int first = 0;      // days before the history starts are not days without TV
+        while (first < DAYS - 1 && tally.days[first] == 0) first++;
+        long average = total / (DAYS - first);
+        LinearLayout head = new LinearLayout(activity);
+        head.setGravity(android.view.Gravity.BOTTOM);
+        TextView title = DashPanel.text(activity, 24, 0xFFFFFFFF);
+        title.setText(R.string.dash_week_title);
+        TextView sum = DashPanel.text(activity, 24, 0xFFFFFFFF);
+        sum.setText(DashboardText.hours(total));
+        head.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        head.addView(sum);
+        col.addView(head);
+        TextView sub = DashPanel.text(activity, 14, 0xA6FFFFFF);
+        sub.setText(activity.getString(R.string.dash_week_sub, DashboardText.hours(average),
+                DashboardText.hours(tally.days[DAYS - 1])));
+        col.addView(sub, margins(8));
+
+        BarsView chart = new BarsView(activity, null);
+        chart.setWide(true);
+        chart.setValues(tally.days);
+        col.addView(chart, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.round(130 * density)));
+        ((LinearLayout.LayoutParams) chart.getLayoutParams()).topMargin = Math.round(24 * density);
+        TextView[] labels = new TextView[DAYS];
+        java.text.SimpleDateFormat weekday = new java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault());
+        java.util.Calendar day = java.util.Calendar.getInstance();
+        day.add(java.util.Calendar.DAY_OF_YEAR, -(DAYS - 1));
+        for (int i = 0; i < DAYS; i++) {
+            labels[i] = DashPanel.text(activity, 12, i == DAYS - 1 ? 0xFF9CC3FF : 0x99FFFFFF);
+            labels[i].setGravity(android.view.Gravity.CENTER);
+            labels[i].setText(i == DAYS - 1 ? activity.getString(R.string.dash_today) : weekday.format(day.getTime()));
+            day.add(java.util.Calendar.DAY_OF_YEAR, 1);
+        }
+        col.addView(DashPanel.cells(activity, labels), margins(8));
+
+        TextView appsTitle = DashPanel.text(activity, 13, 0xA6FFFFFF);
+        appsTitle.setText(R.string.dash_week_apps);
+        col.addView(appsTitle, margins(26));
+        java.util.List<java.util.Map.Entry<String, Long>> top = ScreenTime.top(ScreenTime.week(tally), 5);
+        long most = top.isEmpty() ? 1 : Math.max(1, top.get(0).getValue());
+        for (java.util.Map.Entry<String, Long> entry : top) {
+            if (entry.getValue() < 60_000) break;
+            LinearLayout line = new LinearLayout(activity);
+            line.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            ImageView logo = new ImageView(activity);
+            logo.setImageDrawable(icon(entry.getKey()));
+            logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            int s = Math.round(30 * density);
+            line.addView(logo, new LinearLayout.LayoutParams(s, s));
+            TextView name = DashPanel.text(activity, 15, 0xFFFFFFFF);
+            name.setText(label(entry.getKey()));
+            LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+            np.setMarginStart(Math.round(14 * density));
+            line.addView(name, np);
+            ProgressBar share = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+            share.setProgressDrawable(activity.getDrawable(R.drawable.np_progress));
+            share.setMax(1000);
+            share.setProgress((int) (entry.getValue() * 1000 / most));
+            LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(Math.round(180 * density), Math.round(4 * density));
+            sp.setMarginEnd(Math.round(16 * density));
+            line.addView(share, sp);
+            TextView time = DashPanel.text(activity, 14, 0xD9FFFFFF);
+            time.setText(DashboardText.hours(entry.getValue()));
+            time.setMinWidth(Math.round(64 * density));
+            time.setGravity(android.view.Gravity.END);
+            line.addView(time);
+            col.addView(line, margins(12));
+        }
+        DashPanel.show(activity, col, 720);
+    }
+
+    private LinearLayout.LayoutParams margins(int topDp) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Math.round(topDp * density);
+        return lp;
+    }
+
     // ---- Weather ---------------------------------------------------------------------------------
+
+    private void openWeatherApp() {
+        Intent open = activity.getPackageManager().getLeanbackLaunchIntentForPackage(WEATHER_PKG);
+        if (open != null) activity.startActivity(open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    /** OK on Weather: now, then today and the next two days (from the add-on's "days"), and the next hours. */
+    private void showForecast(org.json.JSONObject w) {
+        LinearLayout col = DashPanel.column(activity);
+        int code = w.optInt("code");
+        LinearLayout head = new LinearLayout(activity);
+        head.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout names = new LinearLayout(activity);
+        names.setOrientation(LinearLayout.VERTICAL);
+        TextView place = DashPanel.text(activity, 24, 0xFFFFFFFF);
+        place.setText(w.optString("place", ""));
+        TextView now = DashPanel.text(activity, 14, 0xA6FFFFFF);
+        now.setText(WeatherText.word(code) + "  \u00B7  " + activity.getString(R.string.dash_wx_hilo,
+                WeatherText.degrees(w.optDouble("hi")), WeatherText.degrees(w.optDouble("lo"))));
+        names.addView(place);
+        names.addView(now, margins(8));
+        head.addView(names, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        TextView big = DashPanel.text(activity, 44, 0xFFFFFFFF);
+        big.setText(WeatherText.symbol(code, w.optBoolean("day", true)) + " " + WeatherText.degrees(w.optDouble("temp")));
+        head.addView(big);
+        col.addView(head);
+
+        org.json.JSONArray days = w.optJSONArray("days");
+        if (days == null || days.length() == 0) {
+            TextView soon = DashPanel.text(activity, 14, 0xA6FFFFFF);
+            soon.setSingleLine(false);
+            soon.setText(R.string.dash_wx_soon);
+            col.addView(soon, margins(24));
+        } else {
+            View[] cells = new View[days.length()];
+            java.text.SimpleDateFormat iso = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT);
+            java.text.SimpleDateFormat weekday = new java.text.SimpleDateFormat("EEEE", java.util.Locale.getDefault());
+            for (int i = 0; i < cells.length; i++) {
+                org.json.JSONObject d = days.optJSONObject(i);
+                LinearLayout cell = new LinearLayout(activity);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+                cell.setBackgroundResource(R.drawable.dash_card_bg);
+                int p = Math.round(16 * density);
+                cell.setPadding(p, p, p, p);
+                TextView name = DashPanel.text(activity, 15, 0xFFFFFFFF);
+                String label;
+                if (i == 0) label = activity.getString(R.string.dash_today);
+                else if (i == 1) label = activity.getString(R.string.dash_tomorrow);
+                else {
+                    try {
+                        label = weekday.format(iso.parse(d.optString("date")));
+                    } catch (java.text.ParseException e) {
+                        label = d.optString("date");
+                    }
+                }
+                name.setText(label);
+                TextView sym = DashPanel.text(activity, 38, 0xFFFFFFFF);
+                sym.setText(WeatherText.symbol(d.optInt("code"), true));
+                TextView word = DashPanel.text(activity, 13, 0xB3FFFFFF);
+                word.setText(WeatherText.word(d.optInt("code")));
+                TextView temps = DashPanel.text(activity, 18, 0xFFFFFFFF);
+                temps.setText(WeatherText.degrees(d.optDouble("hi")) + "  /  " + WeatherText.degrees(d.optDouble("lo")));
+                cell.addView(name);
+                cell.addView(sym, margins(12));
+                cell.addView(word, margins(8));
+                cell.addView(temps, margins(10));
+                if (d.has("rain")) {
+                    TextView rain = DashPanel.text(activity, 13, 0xFF9CC3FF);
+                    rain.setText(activity.getString(R.string.dash_wx_rain, d.optInt("rain") + "%"));
+                    cell.addView(rain, margins(6));
+                }
+                for (int c = 0; c < cell.getChildCount(); c++) ((TextView) cell.getChildAt(c)).setGravity(android.view.Gravity.CENTER);
+                cells[i] = cell;
+            }
+            LinearLayout row = DashPanel.cells(activity, cells);
+            for (int i = 1; i < cells.length; i++) {
+                ((LinearLayout.LayoutParams) cells[i].getLayoutParams()).setMarginStart(Math.round(14 * density));
+            }
+            col.addView(row, margins(26));
+        }
+        TextView hold = DashPanel.text(activity, 12, 0x80FFFFFF);
+        hold.setText(R.string.dash_wx_hold);
+        hold.setGravity(android.view.Gravity.CENTER);
+        col.addView(hold, margins(20));
+        DashPanel.show(activity, col, 760);
+    }
 
     /** The Weather add-on's card provider, read off the main thread; no add-on (or no access): no card. */
     private void loadWeather() {
@@ -581,6 +759,7 @@ final class Dashboard {
             w = null;
         }
         boolean show = w != null && w.length() > 0 && shown.contains(DashboardCards.WEATHER);
+        lastWeather = show ? w : null;
         if (show != (weather.getVisibility() == View.VISIBLE)) {
             if (!show && weather.hasFocus()) {
                 weather.setVisibility(View.GONE);
@@ -666,12 +845,18 @@ final class Dashboard {
                 activity.startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         });
+        // OK: the three days; hold OK (or OK before there is a forecast): the Weather app, to pick the city.
         weather.setOnClickListener(v -> {
-            Intent open = activity.getPackageManager().getLeanbackLaunchIntentForPackage(WEATHER_PKG);
-            if (open != null) activity.startActivity(open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            if (lastWeather != null && lastWeather.has("temp")) showForecast(lastWeather);
+            else openWeatherApp();
+        });
+        weather.setOnLongClickListener(v -> {
+            openWeatherApp();
+            return true;
         });
         screen.setOnClickListener(v -> {
             if (!usageAllowed()) loadScreenTime();
+            else if (lastTally != null) showWeek(lastTally);
         });
         boolean rtl = activity.getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
         for (int i = 0; i < cards.length; i++) {
