@@ -2,9 +2,12 @@
 # wallpapers/ collection) to the launcher on the TV and restart Home. See themes/README.md for the keys.
 #
 # Usage: tools\theme.ps1 -TvHost 192.168.1.50 themes\aurora
+#        tools\theme.ps1 -TvHost 192.168.1.50 themes\my-glass profiles\sony-bravia-ae2-in
+#                                     # a theme with a TV profile's config.json laid over it (its keys win)
 #        tools\theme.ps1 -TvHost 192.168.1.50 -Reset
 param(
     [Parameter(Position = 0)][string]$Theme,
+    [Parameter(Position = 1)][string]$TvProfile,
     [switch]$Reset,
     [string]$TvHost = $env:TV_HOST
 )
@@ -14,6 +17,7 @@ if (-not $TvHost) { throw 'pass -TvHost <tv ip> or set $env:TV_HOST' }
 $env:TV_HOST = $TvHost
 # Resolve the theme folder against the caller's directory before moving into tools\.
 if ($Theme) { $Theme = (Resolve-Path $Theme).Path }
+if ($TvProfile) { $TvProfile = (Resolve-Path $TvProfile).Path }
 Set-Location $PSScriptRoot
 $py = 'venv\Scripts\python.exe'
 if (-not (Test-Path $py)) { throw 'run: python -m venv tools\venv; tools\venv\Scripts\python.exe -m pip install -r tools\requirements.txt' }
@@ -63,9 +67,26 @@ if (-not $Theme) { throw 'usage: theme.ps1 <theme folder> | -Reset' }
 $config = Join-Path $Theme 'config.json'
 if (-not (Test-Path $config)) { throw "no config.json in $Theme" }
 try { Get-Content $config -Raw | ConvertFrom-Json | Out-Null } catch { throw "$config is not valid JSON" }
+$merged = $null
+if ($TvProfile) {
+    # A TV profile (dock, remote keys, Live TV app) over the theme: one config.json, the profile's keys winning.
+    $profileConfig = Join-Path $TvProfile 'config.json'
+    if (-not (Test-Path $profileConfig)) { throw "no config.json in $TvProfile" }
+    try { $over = Get-Content $profileConfig -Raw | ConvertFrom-Json } catch { throw "$profileConfig is not valid JSON" }
+    $base = Get-Content $config -Raw | ConvertFrom-Json
+    foreach ($key in $over.PSObject.Properties) {
+        if ($key.Name -eq '_comment') { continue }
+        $base | Add-Member -NotePropertyName $key.Name -NotePropertyValue $key.Value -Force
+    }
+    $merged = [System.IO.Path]::GetTempFileName()
+    # No BOM: the launcher's JSON parser reads the file as it is.
+    [System.IO.File]::WriteAllText($merged, ($base | ConvertTo-Json -Depth 20), (New-Object System.Text.UTF8Encoding $false))
+    $config = $merged
+}
 
 & $py -I tv.py "mkdir -p $dir 2>/dev/null" | Out-Null
 & $py -I tv.py --push $config "$tmp-config.json" | Out-Null
+if ($merged) { Remove-Item $merged -ErrorAction SilentlyContinue }
 & $py -I tv.py (Put 'config.json')
 $wall = Join-Path $Theme 'wallpaper.jpg'
 if (Test-Path $wall) { & $py -I b64push.py $wall "$tmp-wallpaper.jpg"; & $py -I tv.py (Put 'wallpaper.jpg') } else { & $py -I tv.py (Drop 'wallpaper.jpg') | Out-Null }
@@ -88,4 +109,5 @@ if (Test-Path $captions -PathType Leaf) {
 }
 & $py -I tv.py "printf '%s' '$revision' > $tmp-theme_revision; $(Put 'theme_revision')" | Out-Null
 & $py -I tv.py "$restart; echo applied"
-Write-Host "Theme $(Split-Path $Theme -Leaf) is on the TV. Undo with: tools\theme.ps1 -TvHost $TvHost -Reset"
+$withProfile = if ($TvProfile) { " with profile $(Split-Path $TvProfile -Leaf)" } else { '' }
+Write-Host "Theme $(Split-Path $Theme -Leaf)$withProfile is on the TV. Undo with: tools\theme.ps1 -TvHost $TvHost -Reset"

@@ -8,6 +8,8 @@ profile's keys winning:
 TV_HOST=<tv ip> tools/theme.sh themes/my-glass profiles/sony-bravia-ae2-in
 ```
 
+On Windows: `tools\theme.ps1 -TvHost <tv ip> themes\my-glass profiles\sony-bravia-ae2-in`.
+
 | Profile | TV | What it sets |
 |---|---|---|
 | [`sony-bravia-ae2-in/`](sony-bravia-ae2-in/config.json) | Sony BRAVIA 4K AE2, India, Google TV 14 | Dock (Netflix, YouTube, JioHotstar, Apple TV), no Live TV app, the gear button (646), the six app keys (Sony Pictures Core, Netflix, YouTube, Prime Video, Crunchyroll, SonyLIV) |

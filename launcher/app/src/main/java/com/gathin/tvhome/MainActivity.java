@@ -1002,6 +1002,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (openLauncherSettingsIfAsked(intent)) return;
         if (openInputsIfAsked(intent)) return;
         if (intent == null || !intent.hasCategory(Intent.CATEGORY_HOME)) return;
+        // A touch or an air mouse left touch mode on, where nothing holds focus: Home takes the remote's focus back.
+        if (grid.isInTouchMode()) grid.requestFocusFromTouch();
         grid.scrollToPosition(0);
         lastFocused = 0;
         shelfFocusRow = -1;
