@@ -16,7 +16,9 @@ screenshots with names or cities in them.
 Ask for: the TV's make and model, and its IP (Settings → Network) if they know it. Tell them to enable
 *Developer options* (Settings → System → About → press *Android TV OS build* 7 times) and turn on
 **USB debugging** and **Wireless debugging**. Make the tools' venv:
-`python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt`.
+`python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt`. If `tools/venv/bin/pip` is missing
+afterwards ("ensurepip is not available"), the computer lacks the venv module: on Debian/Ubuntu ask them to run
+`sudo apt install python3-venv` (with their Python's version, e.g. `python3.14-venv`), delete `tools/venv` and make it again.
 
 Then ask one checklist question up front, so you skip what they don't want instead of asking at each step:
 - **Discover** (posters of what's on their streaming apps): needs free TMDB and, optionally, Watchmode accounts

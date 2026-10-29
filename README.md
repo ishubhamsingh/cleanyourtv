@@ -9,7 +9,7 @@ tracking. The launcher itself has no internet access; anything online lives in s
   <img src="docs/fork/all-apps.jpg" width="49%" alt="Discover's Trending row with #1 to #4 badges, and the All apps line with Name, Recently added and Recently used">
 </p>
 <p align="center">
-  <img src="docs/fork/now-playing.jpg" width="49%" alt="Now playing: album art, title, artist, progress and controls">
+  <img src="docs/fork/screensaver.jpg" width="49%" alt="The clock screensaver while music plays: the time and date over drifting colours from the album art, with the cover, title, artist and progress">
   <img src="docs/switches/aurora_background.jpg" width="49%" alt="The aurora background: soft clouds of colour from the playing track's album art">
 </p>
 
@@ -37,7 +37,7 @@ own. Upstream's full reference (the 290+ tested TV lists, every tool, every them
 |---|---|
 | **TV** | Android TV or Google TV, Android 8 or newer, with *Developer options* (any Sony, TCL, Hisense, Philips, Xiaomi, Chromecast with Google TV, Google TV Streamer, Nvidia Shield, ...) |
 | **Memory** | **2 GB or more** for everything. With 1 to 2 GB, use the dashboard without the animated aurora background. **Under 1 GB**: skip the dashboard and Discover and use upstream's plain launcher; the setup checks this for you. |
-| **Computer** | Windows, macOS or Linux on the same network as the TV, with Python 3 and, to build, JDK 17 and the Android SDK (platform 34). |
+| **Computer** | Windows, macOS or Linux on the same network as the TV, with Python 3 (on Debian/Ubuntu also `sudo apt install python3-venv`) and, to build, JDK 17 and the Android SDK (platform 34). |
 | **Optional** | A free [TMDB](https://www.themoviedb.org/signup) account (Discover), a free [Watchmode](https://api.watchmode.com) key (opening titles directly). Weather needs no account. |
 
 ## Set it up with Claude Code (recommended)
