@@ -22,10 +22,11 @@ own. Upstream's full reference (the 290+ tested TV lists, every tool, every them
 
 | | |
 |---|---|
-| **Dashboard** | A row of glass cards above your apps: **Now playing** (album art, progress, controls), **Weather** (now, high/low, the next five hours), **System** (live download speed, Wi-Fi band, memory, storage), **Screen time** (today, the week, your top apps). Scroll down and they fold away, leaving the track and the weather in the header. |
+| **Dashboard** | A row of glass cards above your apps: **Now playing** (album art, progress, controls), **Weather** (now, high/low, the next five hours), **System** (live download speed, Wi-Fi band, memory, storage), **Screen time** (today, the week, your top apps). Scroll down and they fold away, leaving the track and the weather in the header. Switch off the cards you don't want, or all of them. |
 | **Discover** | *For you*, *Trending*, *Top* and *New on your apps*: only titles on streaming apps you have installed. OK opens the title itself in its app. Hold OK for *More like this* or *Not interested*; your taste can be backed up to your TMDB account. Search finds apps and titles. |
 | **All apps** | Every app under the posters, sorted by Name, Recently added or Recently used (move onto a chip and it sorts). New installs carry a *New* badge. |
 | **Now playing everywhere** | The music playing behind Home (Spotify, YouTube Music, ...) on the dashboard, and on the clock screensaver over drifting colours taken from the album art, only while something plays. |
+| **Fits your TV** | Apps per row follow the screen's size (6 on a 55-inch TV). Discover, the cards and the columns can each be changed on the TV: hold OK on the gear → *Launcher settings*. |
 | **Looks** | A white outline focus, glass panels, 14 rotating landscape wallpapers (`my-glass`) or slowly drifting album-art colours (`my-aurora`). |
 | **Your remote works** | The app buttons and the gear button work again without Google TV's home, set per TV in a [profile](profiles/README.md). |
 | **Debloated** | Upstream's tested lists turn off the ads, trackers and bloat your TV shipped with. Everything is disabled, never uninstalled, and can be undone. |
@@ -76,7 +77,8 @@ Gemini CLI, Cursor) can follow the same file, and [PROMPT.md](PROMPT.md) holds t
    adb shell cmd notification allow_listener com.gathin.tvhome/com.gathin.tvhome.NowPlayingListener
    adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow
    ```
-8. **Optional extras:** [Discover](#discover-tmdb-and-watchmode) and [Weather](#weather).
+8. **Optional extras:** [Discover](#discover-tmdb-and-watchmode) and [Weather](#weather). Both are optional: without
+   them the launcher simply leaves their parts out.
 9. **Close up:** turn USB and Wireless debugging off again.
 
 ### Discover (TMDB and Watchmode)
@@ -108,6 +110,8 @@ dashboard's Weather card appears by itself. It uses [Open-Meteo](https://open-me
 
 - **Remote:** Up and Down move between the header, the cards, the dock, Discover and All apps; Left and Right stay
   inside a row. OK on Now playing reaches its controls, **hold OK** opens the music app. Back returns to the dock.
+- **On the TV:** hold OK on the gear → *Launcher settings* for apps per row (Auto, 4 to 7), which dashboard cards
+  show, and Discover on or off.
 - **Change the look** any time with `tools/theme.sh`; `tools/theme.sh --reset` goes back to the built-in config.
 - **After a firmware update** some apps can come back: `TV_HOST=<tv ip> tools/check.py examples/<your-tv>/debloat.txt`.
 

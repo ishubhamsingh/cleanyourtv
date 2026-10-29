@@ -595,12 +595,14 @@ and a wallpaper.
   `dock_row`; and **Reorder apps**. The launcher's own page has these rows, top to bottom:
   - **Reorder apps**, only with `launcher_settings_button`: OK picks an app up, the arrows move it, Back
     places it, and Back again finishes.
-  - **Apps per row** 4, 5, 6 or 7; **Rows below dock** 0 to 3, how many rows of tiles stay visible under the
+  - **Apps per row** Auto (from the screen's size, with `"columns": "auto"` in this fork), 4, 5, 6 or 7; **Rows below dock** 0 to 3, how many rows of tiles stay visible under the
     dock band; **Dock band opacity** 100%, 70%, 50% or 30%. The last two only do anything while the dock is
     its own row (`dock_row`, on by default).
   - **Wallpaper**: one picture from the theme's collection (or its `wallpaper.jpg`), **None**, or **Theme
     default**. A pick holds that picture and stops the rotation until you choose Theme default, press
     Follow theme, or push the theme again.
+  - **Dashboard cards**, with `dashboard`: tick Now playing, Weather, System and Screen time on or off; and
+    **Discover** on or off, while the Discover add-on is installed (this fork's `dashboard_cards` and `discover`).
   - **Animations** on or off, and **Advanced effects** (tile lift, icon zoom and smooth ambient-colour
     transitions; they may use more memory) once animations are on.
   - **Open on start**, only with `open_on_start_choice`: Off, or an app that opens instead of Home the first

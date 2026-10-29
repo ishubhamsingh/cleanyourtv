@@ -18,6 +18,14 @@ Ask for: the TV's make and model, and its IP (Settings → Network) if they know
 **USB debugging** and **Wireless debugging**. Make the tools' venv:
 `python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt`.
 
+Then ask one checklist question up front, so you skip what they don't want instead of asking at each step:
+- **Discover** (posters of what's on their streaming apps): needs free TMDB and, optionally, Watchmode accounts
+  (about 10 minutes of sign-ups). No: skip step 8 entirely; nothing of it shows on the TV.
+- **Weather** card (no account). No: skip step 9.
+- **Dashboard cards**: Now playing, Weather, System, Screen time - all, some or none (none keeps the clean header
+  and dock). Note what they pick for step 7.
+- Their **screen size** in inches, for step 7's columns check.
+
 ## 1. Connect
 
 - Port 5555 first: `TV_HOST=<ip> tools/venv/bin/python -I tools/tv.py --probe`.
@@ -83,12 +91,21 @@ Now playing reads media sessions (never notifications); Screen time reads app us
   (`profiles/README.md`): ask them to press each app button and the gear button while you watch
   `adb shell getevent -lt` (the scancode is the `EV_MSC MSC_SCAN` value's low bits, e.g. `000c01e5` → 485), and
   write `app_keys` (`scan:<code>:<package>`) and `settings_key_scancodes`. Ask which apps go in the dock.
+- **Cards they didn't want:** put `"dashboard_cards": [...]` (from `"now_playing"`, `"weather"`, `"system"`,
+  `"screen_time"`; `[]` for none) in their profile. They can change it later on the TV: hold OK on the gear →
+  Launcher settings → Dashboard cards.
+- **Columns:** the themes use `"columns": "auto"`, which works the screen size out from the panel's reported density.
+  Check it holds for this TV: `adb shell dumpsys display | grep -m1 -o 'xDpi=[0-9.]*'` with the resolution from
+  `real W x H`; diagonal = sqrt((W/xdpi)^2 + (H/xdpi)^2). If that is within ~3 inches of what they told you, leave
+  auto. If it's off, or the dpi is exactly 120/160/213/240/320/480/640 (the launcher then falls back to 6), put
+  `"columns"` in their profile instead: 4 under 40 inches, 5 to 50, 6 to 65, 7 above.
 - Push: `TV_HOST=<ip> tools/theme.sh themes/my-glass profiles/<their-tv>`.
 - Remote buttons: ask them to press each **real** button; injected keys skip the helper.
 
 ## 8. Discover (optional): TMDB and Watchmode
 
-Ask whether they want Discover (posters for what's on their apps). If yes, walk them through it; they type their keys
+Only if they said yes in step 0 (without the add-on the launcher shows no posters and no search, and leaves no gap).
+They can also hide it later without uninstalling: Launcher settings → Discover: Off. Walk them through it; they type their keys
 themselves, and you write them only into `addons/discover/discover.properties` (git-ignored, `chmod 600`).
 
 1. **TMDB key (free):**
@@ -126,6 +143,8 @@ themselves, and you write them only into `addons/discover/discover.properties` (
 6. Press Home; the rows fill within a minute. Check `git status` shows no `discover.properties`.
 
 ## 9. Weather (optional)
+
+Only if they said yes in step 0 and kept the Weather card.
 
 Build and install `addons/weather` the same way (`./gradlew assembleRelease`, push, `pm install -r`). Ask them to open
 **Weather** on the TV once and pick their city. The dashboard card appears on its own (Open-Meteo, no key).

@@ -12,7 +12,7 @@
   "settings_key_panel": true,
   "show_network_pill": false,
   "icon_only_inputs": true,
-  "columns": 6,
+  "columns": "auto",
   "dashboard": true,
   "glass_style": "outline",
   "wallpaper": false,

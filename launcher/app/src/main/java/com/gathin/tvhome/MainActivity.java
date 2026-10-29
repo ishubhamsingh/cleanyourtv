@@ -790,7 +790,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     }
                 });
             }
-        });
+        }, cfg.dashboardCards);
         if (cfg.nowPlaying) setUpNowPlaying();
         if (discoverOn) {
             btnSearch.setVisibility(View.VISIBLE);

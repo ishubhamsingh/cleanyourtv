@@ -33,11 +33,13 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Taste** | Hold OK on a poster: *More like this* or *Not interested*. Every tab re-orders by the genres and languages you like; no app may fill a tab. | automatic |
 | **TMDB account** | *More like this* adds to your TMDB Favourites, *Not interested* rates 2/10; both are read back after a reinstall. | `tmdb_session`, `tmdb_account` (optional) |
 | **Now playing** | An animated music button in the top bar while Spotify or any media app plays; OK opens a glass card with art, title, artist, progress and previous / play-pause / next. | `now_playing` + one ADB grant |
-| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls), System (live download speed, Wi-Fi band, uptime, memory, storage) and Weather (city, now, high/low, the next hours) and Screen time (today, the week, top apps). Folds away below the dock. | `dashboard` |
+| **Dashboard** | A row of glass cards above the dock: Now playing (album art, progress with times, controls), System (live download speed, Wi-Fi band, uptime, memory, storage) and Weather (city, now, high/low, the next hours) and Screen time (today, the week, top apps). Folds away below the dock. Each card can be switched off, in the theme or on the TV. | `dashboard`, `dashboard_cards` |
 | **Aurora background** | Instead of wallpapers: slow drifting clouds of colour taken from the playing track's album art, like Apple Music; the clock screensaver shows it with the track under the clock while music plays. Theme `my-aurora`. | `aurora_background` |
+| **Your choice, on the TV** | Launcher settings (hold OK on the gear) adds **Dashboard cards** (tick the ones you want, or none), **Discover** on/off, and **Auto** for apps per row. | on-TV settings |
+| **Columns by screen size** | `"columns": "auto"` picks 4 to 7 tiles per row from the panel's size: 6 on a 55-inch TV. | `columns` |
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
-| **my-glass theme** | The glass look with 14 rotating landscapes, the dashboard, 6 app columns, round icon-only top buttons, a white outline focus and a 3-minute idle clock. | `themes/my-glass` |
+| **my-glass theme** | The glass look with 14 rotating landscapes, the dashboard, app columns by screen size, round icon-only top buttons, a white outline focus and a 3-minute idle clock. | `themes/my-glass` |
 
 ## Set up a TV from scratch
 
@@ -160,6 +162,15 @@ to the dock and unfolds them. **Up** from the dock reaches the cards and **Up** 
 cards and stop at the ends. The cards update once a second, only while Home is on screen. Now playing needs
 `now_playing` and its one-time grant (below).
 
+**Fewer cards, or none.** `"dashboard_cards": ["now_playing", "screen_time"]` shows only those (the order on screen
+stays Now playing, Weather, System, Screen time); `[]` leaves just the compact header and the dock, with the playing
+track as a chip in the top bar. On the TV: hold OK on the gear → **Launcher settings** → **Dashboard cards**, and tick
+the ones you want. A card that is off does no work at all (System stops sampling, Screen time stops reading usage).
+
+**No Discover.** Skip the add-on and nothing of it shows. Installed but not wanted for now? **Launcher settings →
+Discover: Off** hides the posters and the search button; the apps follow straight under the dock. Pushing a theme
+again (or *Follow theme*) resets these on-TV choices to the theme's.
+
 ## Remote buttons that stopped working
 
 On Sony Google TVs the remote's app keys and Settings button are handed to Google TV's own home screen. With it
@@ -194,7 +205,10 @@ with `adb shell input` do not go through the helper; test with the real remote.
   to change it; `tools/theme.sh --reset` goes back to the plain look.
 - **grid_order:** `alphabetical` (upstream's), `recent` (last opened first) or `frequent` (most opened, the last
   week or two counting most). The dock keeps its own order.
-- **columns:** my-glass uses `"columns": 6` (like Apple TV on a 55" screen). Discover's posters stay four across
+- **columns:** my-glass uses `"columns": "auto"`: Android has no screen size for a TV, but many panels report a real
+  pixel density, so the launcher works out the diagonal (a 55-inch 4K BRAVIA reports 80 dpi: 6 columns). Under 40
+  inches gets 4, to 50 gets 5, to 65 gets 6, above that 7. Where the TV reports a made-up density (exactly 160, 320...)
+  it uses 6. Launcher settings → Apps per row overrides it (Auto, 4, 5, 6, 7). Discover's posters stay four across
   however many app columns there are, so artwork and titles stay readable; a focused poster row sits a little
   higher when needed so the app name under it is never cut off.
 - **A calmer top bar:** `"show_network_pill": false` and `"icon_only_inputs": true` leave only round icons.

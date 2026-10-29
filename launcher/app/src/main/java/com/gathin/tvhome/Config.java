@@ -41,6 +41,10 @@ final class Config {
     static final String WALLPAPER_NAME = "wallpaper.jpg";
     static final String SETTINGS_NAME = "launcher_settings";
     static final String ROWS_BELOW_DOCK_KEY = "rows_below_dock";
+    /** Choices made on the TV for the fork's switches: Discover on or off, and the dashboard's cards. */
+    static final String DISCOVER_KEY = "discover", DASHBOARD_CARDS_KEY = "dashboard_cards";
+    /** The on-TV "columns" choice for Auto. */
+    static final int COLUMNS_AUTO = 0;
     static final String WALLPAPER_CHOICE_KEY = "wallpaper_choice";
     static final String DOCK_OPACITY_KEY = "dock_opacity";
     /**
@@ -254,6 +258,10 @@ final class Config {
     final boolean nowPlaying;
     /** A row of cards (Now playing, System) between the top bar and the dock (config.xml, dashboard). */
     final boolean dashboard;
+    /** dashboard_cards: the cards the dashboard shows (theme list, or the TV's choice); empty for none. */
+    final Set<String> dashboardCards;
+    /** columns came from "auto" (theme or the TV's choice): the settings screen marks Auto. */
+    final boolean columnsAuto;
     /** The backdrop as slowly drifting clouds of colour from the playing track's artwork (config.xml, aurora_background). */
     final boolean auroraBackground;
     /** Remote scancodes that open Settings (config.xml settings_key_scancodes, or a theme / TV profile). */
@@ -274,13 +282,15 @@ final class Config {
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome, boolean ambientGlow, boolean appGlow, boolean fadeRows, int homeIdleClockMinutes,
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
-                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying, boolean dashboard, boolean auroraBackground, int[] settingsKeyScancodes) {
+                   Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, String gridOrder, boolean discover, boolean nowPlaying, boolean dashboard, boolean auroraBackground, int[] settingsKeyScancodes, Set<String> dashboardCards, boolean columnsAuto) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.gridOrder = gridOrder(gridOrder);
         this.discover = discover;
         this.nowPlaying = nowPlaying;
         this.dashboard = dashboard;
+        this.dashboardCards = dashboardCards;
+        this.columnsAuto = columnsAuto;
         this.auroraBackground = auroraBackground;
         this.settingsKeyScancodes = settingsKeyScancodes;
         this.inputKeycodes = inputKeycodes;
@@ -460,6 +470,7 @@ final class Config {
         boolean discover = res.getBoolean(R.bool.discover);
         boolean nowPlaying = res.getBoolean(R.bool.now_playing);
         boolean dashboard = res.getBoolean(R.bool.dashboard);
+        List<String> cardNames = DashboardCards.ALL;
         boolean aurora = res.getBoolean(R.bool.aurora_background);
         String vpn = res.getString(R.string.vpn_app).trim();
         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
@@ -532,7 +543,8 @@ final class Config {
             coocaaSources = bool(json, "coocaa_sources", coocaaSources);
             inputAction = string(json, "input_action", inputAction);
             inputUriScheme = string(json, "input_uri_scheme", inputUriScheme).trim();
-            columns = integer(json, "columns", columns, 1, 8);
+            // "auto": from the panel's size (ScreenSize), resolved below once the TV's own choice is known.
+            columns = "auto".equals(json.opt("columns")) ? COLUMNS_AUTO : integer(json, "columns", columns, 1, 8);
             rowsBelow = integer(json, "rows_below_dock", rowsBelow, 0, 3);
             animations = bool(json, "animations", animations);
             advancedEffects = bool(json, "advanced_effects", advancedEffects);
@@ -565,6 +577,7 @@ final class Config {
             discover = bool(json, "discover", discover);
             nowPlaying = bool(json, "now_playing", nowPlaying);
             dashboard = bool(json, "dashboard", dashboard);
+            cardNames = stringList(json, "dashboard_cards", cardNames);
             aurora = bool(json, "aurora_background", aurora);
             vpn = string(json, "vpn_app", vpn);
             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
@@ -623,7 +636,12 @@ final class Config {
         // Unmounted storage looks like a theme reset; compare only once the file is readable.
         if (mounted) syncThemeChoices(choices, dir, file);
         int chosenColumns = choices.getInt("columns", columns);
-        if (chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
+        if (chosenColumns == 0 || chosenColumns >= 4 && chosenColumns <= 7) columns = chosenColumns;
+        boolean columnsAuto = columns == COLUMNS_AUTO;
+        if (columnsAuto) columns = autoColumns(ctx);
+        discover = choices.getBoolean(DISCOVER_KEY, discover);
+        Set<String> dashboardCards = choices.contains(DASHBOARD_CARDS_KEY)
+                ? DashboardCards.split(choices.getString(DASHBOARD_CARDS_KEY, "")) : DashboardCards.of(cardNames);
         int chosenRows = choices.getInt(ROWS_BELOW_DOCK_KEY, rowsBelow);
         if (chosenRows >= 0 && chosenRows <= 3) rowsBelow = chosenRows;
         animations = choices.getBoolean("animations", animations);
@@ -680,7 +698,7 @@ final class Config {
                 dockBand, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough,
                 consumeVolumeKeys, powerOnHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
-                dateBelowClock, gridOrder, discover, nowPlaying, dashboard, aurora, settingsScancodes);
+                dateBelowClock, gridOrder, discover, nowPlaying, dashboard, aurora, settingsScancodes, dashboardCards, columnsAuto);
     }
 
     /**
@@ -722,12 +740,12 @@ final class Config {
             // Existing preferences survive an app upgrade, unless the first launch follows an
             // explicit theme push or reset by the updated tools.
             SharedPreferences.Editor editor = choices.edit();
-            if (!"absent".equals(token)) editor.remove("columns").remove("animations")
+            if (!"absent".equals(token)) editor.remove("columns").remove("animations").remove(DISCOVER_KEY).remove(DASHBOARD_CARDS_KEY)
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
                     .remove(DOCK_OPACITY_KEY);
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
-            choices.edit().remove("columns").remove("animations").remove("advanced_effects")
+            choices.edit().remove("columns").remove("animations").remove("advanced_effects").remove(DISCOVER_KEY).remove(DASHBOARD_CARDS_KEY)
                     .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(DOCK_OPACITY_KEY)
                     .putString(THEME_SIGNATURE_KEY, signature).commit();
         }
@@ -823,6 +841,15 @@ final class Config {
     private static String string(JSONObject o, String key, String fallback) {
         Object v = o.opt(key);
         return v instanceof String ? ((String) v).trim() : fallback;
+    }
+
+    /** "columns": "auto": tiles per row from the panel's reported size, 6 where the TV gives none that holds up. */
+    static int autoColumns(Context ctx) {
+        android.util.DisplayMetrics m = new android.util.DisplayMetrics();
+        android.view.WindowManager wm = (android.view.WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
+        if (wm == null) return ScreenSize.FALLBACK_COLUMNS;
+        wm.getDefaultDisplay().getRealMetrics(m);
+        return ScreenSize.columns(ScreenSize.inches(m.widthPixels, m.heightPixels, m.xdpi, m.ydpi));
     }
 
     private static boolean bool(JSONObject o, String key, boolean fallback) {

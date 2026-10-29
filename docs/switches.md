@@ -48,6 +48,7 @@ fits the rules; keys from before the rule sit on its wanted list until a screens
 | `discover` | <img src="switches/discover.jpg" width="320" alt="discover on a TV: search results for Lupin, the one on Netflix first"> |
 | `now_playing` | <img src="switches/now_playing.jpg" width="320" alt="now_playing on a TV: the animated music button in the top bar and its open card with Spotify's album art, title, artist, progress, previous, pause and next"> |
 | `dashboard` | <img src="switches/dashboard.jpg" width="320" alt="dashboard on a TV: a Now playing card with Spotify's album art, track, artist, progress and controls, and a System card with download speed, Wi-Fi band, uptime, memory and storage, above the dock"> |
+| `dashboard_cards` | <img src="switches/dashboard_cards.jpg" width="320" alt="dashboard_cards on a TV: only the Now playing and Screen time cards above the dock, Discover switched off so the app grid follows"> |
 | `aurora_background` | <img src="switches/aurora_background.jpg" width="320" alt="aurora_background on a TV: soft gold and olive clouds of colour from the playing track's artwork behind the dashboard cards and the dock"> |
 | `lunar_date` | <img src="switches/lunar_date.jpg" width="320" alt="lunar_date on a TV"> |
 | `dock_band` | <img src="switches/dock_band.jpg" width="320" alt="dock_band on a TV"> |

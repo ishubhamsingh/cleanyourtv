@@ -49,6 +49,16 @@
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
+    <string name="columns_auto">Auto</string>
+    <string name="dashboard_cards_state">Dashboard cards: %1$s</string>
+    <string name="dashboard_cards_state_title">Dashboard cards</string>
+    <string name="dashboard_cards_none">None</string>
+    <string name="dashboard_cards_all">All</string>
+    <string name="discover_state">Discover: %1$s</string>
+    <string name="card_now_playing">Now playing</string>
+    <string name="card_weather">Weather</string>
+    <string name="card_system">System</string>
+    <string name="card_screen_time">Screen time</string>
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>

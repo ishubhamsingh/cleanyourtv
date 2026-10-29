@@ -67,6 +67,8 @@ final class Dashboard {
     private android.animation.ValueAnimator fold;
     private boolean collapsed;
     private final View[] cards;
+    /** dashboard_cards: the cards this TV shows; with none, the row stays away and only the header's chip is left. */
+    private final java.util.Set<String> shown;
     private final View[] buttons;
     private final ImageView art;
     private final TextView app, title, artist, pos, dur, up, net, rate, mem, disk;
@@ -89,17 +91,21 @@ final class Dashboard {
         public void run() {
             if (!running) return;
             updateProgress();
-            sampleNetwork();
-            if (ticks % 5 == 0) updateSystem();
-            if (ticks % 60 == 0) loadScreenTime();
-            if (ticks % 600 == 0) loadWeather();
+            if (shown.contains(DashboardCards.SYSTEM)) {
+                sampleNetwork();
+                if (ticks % 5 == 0) updateSystem();
+            }
+            if (ticks % 60 == 0 && shown.contains(DashboardCards.SCREEN_TIME)) loadScreenTime();
+            if (ticks % 600 == 0 && shown.contains(DashboardCards.WEATHER)) loadWeather();
             ticks++;
             handler.postDelayed(this, 1000);
         }
     };
 
-    private Dashboard(Activity activity, View row, TextView chip, TextView weatherChip, Host host) {
+    private Dashboard(Activity activity, View row, TextView chip, TextView weatherChip, Host host,
+                      java.util.Set<String> shown) {
         this.activity = activity;
+        this.shown = shown;
         this.row = row;
         this.chip = chip;
         this.weatherChip = weatherChip;
@@ -117,6 +123,8 @@ final class Dashboard {
         bars = row.findViewById(R.id.dashBars);
         weather = row.findViewById(R.id.dashWeather);
         cards = new View[]{now, weather, system, screen};
+        String[] names = {DashboardCards.NOW_PLAYING, DashboardCards.WEATHER, DashboardCards.SYSTEM, DashboardCards.SCREEN_TIME};
+        for (int i = 0; i < cards.length; i++) if (!shown.contains(names[i])) cards[i].setVisibility(View.GONE);
         art = row.findViewById(R.id.dashArt);
         app = row.findViewById(R.id.dashApp);
         title = row.findViewById(R.id.dashTitle);
@@ -152,10 +160,15 @@ final class Dashboard {
             if (newFocus != null) setCollapsed(host.belowDock(newFocus));
         });
         showTrack(null, null);
+        if (shown.isEmpty()) {     // no cards: the row never shows, so the header keeps the playing track's chip
+            row.setVisibility(View.GONE);
+            collapsed = true;
+            showChip();
+        }
     }
 
     /** Puts the row above the grid (between the top bar and the dock). */
-    static Dashboard attach(Activity activity, View grid, Host host) {
+    static Dashboard attach(Activity activity, View grid, Host host, java.util.Set<String> shown) {
         View gridFrame = (View) grid.getParent();
         ViewGroup column = (ViewGroup) gridFrame.getParent();
         View row = LayoutInflater.from(activity).inflate(R.layout.dashboard_cards, column, false);
@@ -165,7 +178,7 @@ final class Dashboard {
         TextView chip = topChip(activity);
         buttons.addView(chip, 0, chip.getLayoutParams());
         TextView weatherChip = compactHeader(activity);
-        return new Dashboard(activity, row, chip, weatherChip, host);
+        return new Dashboard(activity, row, chip, weatherChip, host, shown);
     }
 
     /**
@@ -212,8 +225,15 @@ final class Dashboard {
 
     /** Focus on the card last used (Now playing the first time). False if the row cannot take it. */
     boolean focus() {
-        View target = lastCard != null ? lastCard : now;
-        return target.requestFocus();
+        if (lastCard != null && lastCard.getVisibility() == View.VISIBLE && lastCard.requestFocus()) return true;
+        View first = firstCard();
+        return first != null && first.requestFocus();
+    }
+
+    /** The first card on screen, or null with none (dashboard_cards empty). */
+    private View firstCard() {
+        for (View card : cards) if (card.getVisibility() == View.VISIBLE) return card;
+        return null;
     }
 
     void start() {
@@ -277,7 +297,7 @@ final class Dashboard {
      * chip in the top bar; focus back on the dock, the cards or the top bar unfolds them.
      */
     private void setCollapsed(boolean collapse) {
-        if (collapse == collapsed) return;
+        if (collapse == collapsed || shown.isEmpty()) return;
         collapsed = collapse;
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) row.getLayoutParams();
         int full = Math.round(166 * density), margin = Math.round(14 * density);
@@ -306,7 +326,8 @@ final class Dashboard {
     private void showChip() {
         weatherChip.setVisibility(collapsed && weather.getVisibility() == View.VISIBLE && weatherChip.length() > 0
                 ? View.VISIBLE : View.GONE);
-        boolean show = collapsed && track != null;
+        // With the Now playing card off, the header's chip is the track's only place: it shows unfolded too.
+        boolean show = track != null && (collapsed || !shown.contains(DashboardCards.NOW_PLAYING));
         chip.setVisibility(show ? View.VISIBLE : View.GONE);
         if (show && track.playing) chipBars.start();
         else chipBars.stop();
@@ -559,9 +580,13 @@ final class Dashboard {
         } catch (org.json.JSONException e) {
             w = null;
         }
-        boolean show = w != null && w.length() > 0;
+        boolean show = w != null && w.length() > 0 && shown.contains(DashboardCards.WEATHER);
         if (show != (weather.getVisibility() == View.VISIBLE)) {
-            if (!show && weather.hasFocus()) now.requestFocus();
+            if (!show && weather.hasFocus()) {
+                weather.setVisibility(View.GONE);
+                View first = firstCard();
+                if (first != null) first.requestFocus();
+            }
             weather.setVisibility(show ? View.VISIBLE : View.GONE);
         }
         if (!show) return;
@@ -667,9 +692,11 @@ final class Dashboard {
                     case KeyEvent.KEYCODE_DPAD_LEFT:
                     case KeyEvent.KEYCODE_DPAD_RIGHT:
                         int step = (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) != rtl ? 1 : -1;
-                        int to = index + step;
-                        if (to >= 0 && to < cards.length) cards[to].requestFocus();
-                        return true;     // the row's ends: stay
+                        // Past the cards that are off (or Weather without its add-on); the row's ends: stay.
+                        for (int to = index + step; to >= 0 && to < cards.length; to += step) {
+                            if (cards[to].getVisibility() == View.VISIBLE && cards[to].requestFocus()) break;
+                        }
+                        return true;
                     default:
                         return false;
                 }

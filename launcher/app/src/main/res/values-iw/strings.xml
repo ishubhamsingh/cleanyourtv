@@ -47,6 +47,16 @@
     <string name="launcher_settings">הגדרות מסך הבית</string>
     <string name="native_settings">הגדרות היצרן</string>
     <string name="columns_label">אפליקציות בשורה</string>
+    <string name="columns_auto">אוטומטי</string>
+    <string name="dashboard_cards_state">כרטיסי לוח הבקרה: %1$s</string>
+    <string name="dashboard_cards_state_title">כרטיסי לוח הבקרה</string>
+    <string name="dashboard_cards_none">ללא</string>
+    <string name="dashboard_cards_all">הכול</string>
+    <string name="discover_state">גילוי: %1$s</string>
+    <string name="card_now_playing">מתנגן עכשיו</string>
+    <string name="card_weather">מזג אוויר</string>
+    <string name="card_system">מערכת</string>
+    <string name="card_screen_time">זמן מסך</string>
     <string name="dock_opacity_label">עוצמת הרקע בשורת המועדפים</string>
     <string name="animations_state">הנפשות: %1$s</string>
     <string name="advanced_effects">אפקטים מתקדמים</string>

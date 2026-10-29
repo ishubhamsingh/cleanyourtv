@@ -23,7 +23,9 @@ import java.util.List;
 public final class LauncherSettingsActivity extends Activity {
     static final String EXTRA_REORDER = "com.gathin.tvhome.extra.REORDER_FROM_SETTINGS";
     private SharedPreferences choices;
-    private final TextView[] columnChoices = new TextView[4];
+    /** Auto, then 4 to 7. */
+    private final TextView[] columnChoices = new TextView[5];
+    private static final int[] COLUMN_VALUES = {Config.COLUMNS_AUTO, 4, 5, 6, 7};
     private final TextView[] rowChoices = new TextView[4];
     private static final int[] DOCK_OPACITIES = {100, 70, 50, 30};
     private final TextView[] dockChoices = new TextView[DOCK_OPACITIES.length];
@@ -32,6 +34,10 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView advancedChoice;
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
+    private TextView dashboardCardsChoice;
+    private TextView discoverChoice;
+    private java.util.Set<String> dashboardCards;
+    private boolean discover;
     private int columns;
     private int rowsBelowDock;
     private int dockOpacity;
@@ -50,15 +56,17 @@ public final class LauncherSettingsActivity extends Activity {
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_REORDER, true));
             finish();
         });
-        columns = config.columns;
+        columns = config.columnsAuto ? Config.COLUMNS_AUTO : config.columns;
+        dashboardCards = config.dashboardCards;
+        discover = config.discover;
         rowsBelowDock = config.rowsBelowDock;
         dockOpacity = config.dockOpacity;
         animations = config.animations;
         advancedEffects = config.animations && config.advancedEffects;
 
-        int[] ids = {R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
+        int[] ids = {R.id.columnsAuto, R.id.columns4, R.id.columns5, R.id.columns6, R.id.columns7};
         for (int i = 0; i < ids.length; i++) {
-            final int value = i + 4;
+            final int value = COLUMN_VALUES[i];
             columnChoices[i] = findViewById(ids[i]);
             columnChoices[i].setOnClickListener(v -> {
                 if (columns == value) return;
@@ -123,6 +131,22 @@ public final class LauncherSettingsActivity extends Activity {
                         .show();
             }
         });
+        dashboardCardsChoice = findViewById(R.id.dashboardCardsChoice);
+        if (config.dashboard) {
+            dashboardCardsChoice.setVisibility(View.VISIBLE);
+            dashboardCardsChoice.setOnClickListener(v -> showCardsPicker());
+        }
+        // Discover's row only while its add-on is installed: without it there is nothing to switch.
+        discoverChoice = findViewById(R.id.discoverChoice);
+        if (Discover.get(this).available()) {
+            discoverChoice.setVisibility(View.VISIBLE);
+            discoverChoice.setOnClickListener(v -> {
+                discover = !discover;
+                choices.edit().putBoolean(Config.DISCOVER_KEY, discover).apply();
+                changed();
+                refresh();
+            });
+        }
         openOnStartChoice = findViewById(R.id.openOnStartChoice);
         if (config.openOnStartChoice) {
             openOnStartChoice.setVisibility(View.VISIBLE);
@@ -133,9 +157,12 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY).commit();
+                    .remove(Config.DOCK_OPACITY_KEY).remove(OpenOnStart.KEY)
+                    .remove(Config.DISCOVER_KEY).remove(Config.DASHBOARD_CARDS_KEY).commit();
             Config current = Config.load(this);
-            columns = current.columns;
+            columns = current.columnsAuto ? Config.COLUMNS_AUTO : current.columns;
+            dashboardCards = current.dashboardCards;
+            discover = current.discover;
             rowsBelowDock = current.rowsBelowDock;
             dockOpacity = current.dockOpacity;
             animations = current.animations;
@@ -151,7 +178,7 @@ public final class LauncherSettingsActivity extends Activity {
                 open(SystemSettings.intent(this, Settings.ACTION_SETTINGS)));
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
-        else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+        else columnChoices[columns == Config.COLUMNS_AUTO ? 0 : Math.max(1, Math.min(columns - 3, 4))].requestFocus();
     }
 
     private void reverseRow(TextView[] views) {
@@ -271,7 +298,7 @@ public final class LauncherSettingsActivity extends Activity {
 
     private void refresh() {
         for (int i = 0; i < columnChoices.length; i++) {
-            columnChoices[i].setSelected(columns == i + 4);
+            columnChoices[i].setSelected(columns == COLUMN_VALUES[i]);
         }
         for (int i = 0; i < rowChoices.length; i++) {
             rowChoices[i].setSelected(rowsBelowDock == i);
@@ -291,6 +318,8 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        dashboardCardsChoice.setText(getString(R.string.dashboard_cards_state, cardsLabel()));
+        discoverChoice.setText(getString(R.string.discover_state, getString(discover ? R.string.on : R.string.off)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
@@ -298,7 +327,46 @@ public final class LauncherSettingsActivity extends Activity {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
-                || choices.contains(OpenOnStart.KEY);
+                || choices.contains(OpenOnStart.KEY) || choices.contains(Config.DISCOVER_KEY)
+                || choices.contains(Config.DASHBOARD_CARDS_KEY);
+    }
+
+    private static final int[] CARD_LABELS = {R.string.card_now_playing, R.string.card_weather, R.string.card_system,
+            R.string.card_screen_time};
+
+    /** The dashboard's cards, each ticked on or off; none at all leaves the header and the dock. */
+    private void showCardsPicker() {
+        List<String> all = DashboardCards.ALL;
+        String[] labels = new String[all.size()];
+        boolean[] ticked = new boolean[all.size()];
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = getString(CARD_LABELS[i]);
+            ticked[i] = dashboardCards.contains(all.get(i));
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dashboard_cards_state_title)
+                .setMultiChoiceItems(labels, ticked, (dialog, which, isChecked) -> ticked[which] = isChecked)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    List<String> picked = new ArrayList<>();
+                    for (int i = 0; i < ticked.length; i++) if (ticked[i]) picked.add(all.get(i));
+                    dashboardCards = DashboardCards.of(picked);
+                    choices.edit().putString(Config.DASHBOARD_CARDS_KEY, DashboardCards.join(dashboardCards)).apply();
+                    changed();
+                    refresh();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private String cardsLabel() {
+        if (dashboardCards.isEmpty()) return getString(R.string.dashboard_cards_none);
+        if (dashboardCards.size() == DashboardCards.ALL.size()) return getString(R.string.dashboard_cards_all);
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < CARD_LABELS.length; i++) {
+            if (!dashboardCards.contains(DashboardCards.ALL.get(i))) continue;
+            b.append(b.length() == 0 ? "" : ", ").append(getString(CARD_LABELS[i]));
+        }
+        return b.toString();
     }
 
     private void open(Intent intent) {
