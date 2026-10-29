@@ -63,6 +63,8 @@ final class Shelf {
     private String appsOrder = Config.GRID_RECENT;
     private LinearLayout appsRow;
     private String pickOrder;
+    /** Left or Right inside the chips moved the focus: only then does resting on a chip pick it. */
+    private boolean chipStep;
     private final Runnable pickOnRest = this::pickRested;
 
     private void pickRested() {
@@ -289,9 +291,18 @@ final class Shelf {
             chip.setOnClickListener(v -> listener.onAppsOrder(ORDERS[index]));
             // Like the Discover tabs: resting on a chip picks it (after a moment, so sweeping across them does not
             // re-sort the grid at every step).
+            // Arriving any other way (Up from the apps, focus put back after a reload) lands on the order in use, so
+            // passing through never re-sorts the grid.
             chip.setOnFocusChangeListener((v, has) -> {
                 v.removeCallbacks(pickOnRest);
-                if (!has || ORDERS[index].equals(appsOrder)) return;
+                if (!has) return;       // the chip being left: the step flag is for the one arriving
+                boolean step = chipStep;
+                chipStep = false;
+                if (ORDERS[index].equals(appsOrder)) return;
+                if (!step) {
+                    v.post(this::focusAppsChip);
+                    return;
+                }
                 pickOrder = ORDERS[index];
                 v.postDelayed(pickOnRest, 350);
             });
@@ -307,7 +318,11 @@ final class Shelf {
                     case KeyEvent.KEYCODE_DPAD_LEFT:
                     case KeyEvent.KEYCODE_DPAD_RIGHT:
                         int to = index + ((keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) != rtl ? 1 : -1);
-                        if (to >= 0 && to < ORDERS.length) appsRow.getChildAt(to + 1).requestFocus();
+                        if (to >= 0 && to < ORDERS.length) {
+                            chipStep = true;
+                            appsRow.getChildAt(to + 1).requestFocus();
+                            chipStep = false;
+                        }
                         return true;
                     default:
                         return false;

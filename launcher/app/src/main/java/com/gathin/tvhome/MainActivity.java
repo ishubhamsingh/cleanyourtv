@@ -2802,7 +2802,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (gridStart > 0 && keyCode == KeyEvent.KEYCODE_DPAD_UP && position >= gridStart && position < gridStart + COLUMNS) {
             shelfReturnColumn = position - gridStart;
-            focusShelfRow(shelf.rowCount() - 1);
+            // The All apps chips sit right above the grid: Up lands on the order in use, else on the posters.
+            if (!shelf.focusAppsChip()) focusShelfRow(shelf.rowCount() - 1);
             grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
             return true;
         }
