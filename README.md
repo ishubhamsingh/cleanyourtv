@@ -94,7 +94,8 @@ Gemini CLI, Cursor) can follow the same file, and [PROMPT.md](PROMPT.md) holds t
    region=IN          # your country, two letters: what's streaming where
    language=en-IN
    ```
-4. Build and install: `cd addons/discover && ./gradlew assembleRelease`, then install
+4. Build and install: `cp launcher/local.properties addons/discover/` (the Android SDK path the launcher's script
+   wrote), `cd addons/discover && ./gradlew assembleRelease`, then install
    `app/build/outputs/apk/release/app-release.apk` with `tools/tv.py --push` and `pm install` (see
    [FORK.md](FORK.md#discover-search-trending-for-you)). Build it on the same computer as the launcher: the two
    trust each other by their signing key.

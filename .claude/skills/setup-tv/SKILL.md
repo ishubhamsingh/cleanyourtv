@@ -138,6 +138,7 @@ themselves, and you write them only into `addons/discover/discover.properties` (
    in TMDB settings.
 5. Build and install (same machine as the launcher: same signing key):
    ```bash
+   cp -n launcher/local.properties addons/discover/   # the SDK path step 5's script wrote; the add-ons need it too
    (cd addons/discover && ./gradlew assembleRelease)
    TV_HOST=<ip> tools/venv/bin/python -I tools/tv.py --push addons/discover/app/build/outputs/apk/release/app-release.apk /data/local/tmp/discover.apk
    TV_HOST=<ip> tools/venv/bin/python -I tools/tv.py 'pm install -r /data/local/tmp/discover.apk; rm -f /data/local/tmp/discover.apk'
@@ -148,7 +149,8 @@ themselves, and you write them only into `addons/discover/discover.properties` (
 
 Only if they said yes in step 0 and kept the Weather card.
 
-Build and install `addons/weather` the same way (`./gradlew assembleRelease`, push, `pm install -r`). Ask them to open
+Build and install `addons/weather` the same way (`cp -n launcher/local.properties addons/weather/`, then
+`./gradlew assembleRelease`, push, `pm install -r`). Ask them to open
 **Weather** on the TV once and pick their city. The dashboard card appears on its own (Open-Meteo, no key).
 
 ## 10. Check, then close up
