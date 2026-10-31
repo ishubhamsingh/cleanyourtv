@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Your box's device ID and local key, from backlight.properties (git ignores it; see backlight.properties.example).
+def boxProps = new Properties()
+def boxFile = rootProject.file('backlight.properties')
+if (boxFile.exists()) boxFile.withInputStream { boxProps.load(it) }
+def prop = { String name, String fallback -> (boxProps.getProperty(name) ?: fallback).trim().replace('\\', '\\\\').replace('"', '\\"') }
+
+android {
+    namespace 'com.gathin.tvhome.backlight'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.gathin.tvhome.backlight'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'DEVICE_ID', "\"${prop('device_id', '')}\""
+        buildConfigField 'String', 'LOCAL_KEY', "\"${prop('local_key', '')}\""
+        buildConfigField 'String', 'IP', "\"${prop('ip', '')}\""
+        buildConfigField 'String', 'SYNC_INPUTS', "\"${prop('sync_inputs', 'HDMI 4')}\""
+        buildConfigField 'String', 'INPUT_APP', "\"${prop('input_app', 'com.sony.dtv.tvlin')}\""
+        buildConfigField 'String', 'DP', "\"${prop('dp', '25')}\""
+        // The LDD11 MAX's Sync and its Calm scene; another box: watch its data points while you tap the app (README).
+        buildConfigField 'String', 'SYNC_VALUE', "\"${prop('sync_value', '82000000000000000000000000000000')}\""
+        buildConfigField 'String', 'OTHER_VALUE', "\"${prop('other_value', '88000000000000000000000000000000')}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            // Sideloaded over ADB like the launcher: signed with the debug key. Sign your own releases with your key.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Test only (never in the APK): plain JVM tests for the Tuya framing, the discovery and the input rule.
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20231013'
+}

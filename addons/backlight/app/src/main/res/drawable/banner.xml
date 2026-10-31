@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The TV banner: a dark screen with a violet-to-cyan glow behind it. Drawn for this add-on, no third-party art. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp" android:height="180dp"
+    android:viewportWidth="320" android:viewportHeight="180">
+    <path android:fillColor="#FF101418" android:pathData="M0,0h320v180h-320z" />
+    <path android:fillColor="#668E6CF0" android:pathData="M70,30h180a24,24 0,0 1,24 24v72a24,24 0,0 1,-24 24h-180a24,24 0,0 1,-24 -24v-72a24,24 0,0 1,24 -24z" />
+    <path android:fillColor="#5534C6E0" android:pathData="M80,40h160a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-160a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z" />
+    <path android:fillColor="#FF05070A" android:pathData="M88,50h144v80h-144z" />
+</vector>

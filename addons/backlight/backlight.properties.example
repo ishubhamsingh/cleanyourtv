@@ -1,0 +1,13 @@
+# Copy to backlight.properties (git ignores it) and fill in your box. README: "Get your box's key".
+device_id=
+local_key=
+# Optional: the box's address. Empty, or when it stops answering, the add-on finds it on the network by itself.
+ip=
+# Inputs that switch the light to sync, as the TV names them in its input banner; comma-separated.
+sync_inputs=HDMI 4
+# The TV's own app for HDMI inputs (Sony: com.sony.dtv.tvlin).
+input_app=com.sony.dtv.tvlin
+# The data point and the two values: the LDD11 MAX's Sync and Calm scene. README: "Another box".
+dp=25
+sync_value=82000000000000000000000000000000
+other_value=88000000000000000000000000000000

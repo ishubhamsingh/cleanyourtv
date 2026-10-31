@@ -1,0 +1,6 @@
+.gradle/
+build/
+app/build/
+local.properties
+# Your box's device ID and local key: never committed
+backlight.properties

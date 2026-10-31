@@ -40,6 +40,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
 | **my-glass theme** | The glass look with 14 rotating landscapes, the dashboard, app columns by screen size, round icon-only top buttons, a white outline focus and a 3-minute idle clock. | `themes/my-glass` |
+| **Backlight** | A Tuya HDMI sync box (Smart Life) switches to Sync on your console input and back to a calm scene on Home and the TV's own apps, by itself, over the home network. | `addons/backlight` |
 
 ## Set up a TV from scratch
 
@@ -179,6 +180,14 @@ the ones you want. A card that is off does no work at all (System stops sampling
 **No Discover.** Skip the add-on and nothing of it shows. Installed but not wanted for now? **Launcher settings →
 Discover: Off** hides the posters and the search button; the apps follow straight under the dock. Pushing a theme
 again (or *Follow theme*) resets these on-TV choices to the theme's.
+
+## Backlight: sync only when it can work
+
+An HDMI sync box only sees what passes through it: on the TV's own apps it has nothing to follow. The
+[Backlight](addons/backlight/) add-on switches a Tuya sync box (the ones in the Smart Life app) to **Sync** when the
+TV is on the box's input and to a calm **scene** everywhere else, 2 to 3 seconds after each change, including when
+a console turns the TV over to its input over HDMI-CEC. It talks to the box on the home network only, with the box's
+local key (one-time Tuya developer project; the add-on's README walks through it).
 
 ## Remote buttons that stopped working
 
