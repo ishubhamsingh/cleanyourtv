@@ -173,17 +173,43 @@ final class Box {
             paletteFrom = palette != null ? currentColours(now) : colours;
             paletteSince = now;
             palette = colours;
-            if (albumPlaying()) {
-                if (autoMode != Rule.Mode.SYNC) startAlbum();
-            } else if (albumRunning) {
-                stopAlbum();
-                if (autoMode != Rule.Mode.SYNC) send(otherLook(), true, Rule.Mode.OTHER);
-            }
+            recheckAlbum();
         });
     }
 
+    /** What plays and what is in front: album colours only for music (see {@link Rule#isMusic}). */
+    private String playingPackage, frontPackage;
+    private int playingType;
+
+    /** From the media listener: the playing app and what it says it plays. */
+    void playing(String pkg, int contentType) {
+        main.post(() -> {
+            playingPackage = pkg;
+            playingType = contentType;
+            recheckAlbum();
+        });
+    }
+
+    /** From the input watcher: the full-screen app in front (a video app coming to the front stops the colours). */
+    void front(String pkg) {
+        main.post(() -> {
+            if (pkg == null || pkg.equals(frontPackage)) return;
+            frontPackage = pkg;
+            recheckAlbum();
+        });
+    }
+
+    private void recheckAlbum() {
+        if (albumPlaying()) {
+            if (autoMode != Rule.Mode.SYNC) startAlbum();
+        } else if (albumRunning) {
+            stopAlbum();
+            if (autoMode != Rule.Mode.SYNC) send(otherLook(), true, Rule.Mode.OTHER);
+        }
+    }
+
     private boolean albumPlaying() {
-        return albumOn() && palette != null;
+        return albumOn() && palette != null && Rule.isMusic(playingType, playingPackage, frontPackage);
     }
 
     private int[] currentColours(long now) {

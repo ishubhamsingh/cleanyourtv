@@ -27,7 +27,11 @@ and the line under the title says what is on.
 
 ## Album colours
 
-While Spotify, YouTube Music or any app plays music away from the sync input, the strip shows what the launcher's
+Only for music: an app that says it plays music (Spotify, YouTube Music) counts whether it is in front or behind;
+one that says movie or speech (Netflix, a video in YouTube) never does; one that doesn't say counts only while it
+plays behind another app, since video apps play only in front.
+
+While music plays away from the sync input, the strip shows what the launcher's
 `my-aurora` background shows: the cover made into four colours (one per quarter, made vivid, a little apart in hue
 so a cover in one colour still gives four), drifting as clouds on 90-second paths, crossfading over 2 seconds when
 the track changes. The box takes one colour at a time, so the strip follows **the screen's overall tint**: the

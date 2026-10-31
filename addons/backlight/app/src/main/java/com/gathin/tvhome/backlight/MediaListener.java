@@ -72,10 +72,15 @@ public class MediaListener extends NotificationListenerService {
     private void update() {
         Bitmap art = null;
         boolean playing = false;
+        String pkg = null;
+        int type = 0;
         for (MediaController c : watched) {
             PlaybackState s = c.getPlaybackState();
             if (s == null || s.getState() != PlaybackState.STATE_PLAYING) continue;
             playing = true;
+            pkg = c.getPackageName();
+            MediaController.PlaybackInfo info = c.getPlaybackInfo();
+            type = info == null || info.getAudioAttributes() == null ? 0 : info.getAudioAttributes().getContentType();
             MediaMetadata m = c.getMetadata();
             if (m != null) {
                 art = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
@@ -90,6 +95,7 @@ public class MediaListener extends NotificationListenerService {
             box.music(null);
             return;
         }
+        box.playing(pkg, type);
         if (art != null && art == lastArt) return;               // same cover: the drift goes on
         lastArt = art;
         int[] colours;

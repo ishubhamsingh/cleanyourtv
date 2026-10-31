@@ -54,4 +54,17 @@ public class RuleTest {
         assertFalse(Rule.fullScreen(640, 1080, 1920, 1080));     // a settings side panel
         assertFalse(Rule.fullScreen(1920, 120, 1920, 1080));     // the volume bar
     }
+
+    @Test
+    public void albumColoursAreForMusicNotVideo() {
+        String spotify = "com.spotify.tv.android", netflix = "com.netflix.ninja", home = "com.gathin.tvhome";
+        // What the app says wins: Spotify's music in front or behind, Netflix's movie never.
+        assertTrue(Rule.isMusic(Rule.CONTENT_MUSIC, spotify, spotify));
+        assertFalse(Rule.isMusic(Rule.CONTENT_MOVIE, netflix, home));
+        assertFalse(Rule.isMusic(Rule.CONTENT_SPEECH, "podcasts", home));
+        // An app that doesn't say: music only while it plays behind another app.
+        assertFalse(Rule.isMusic(0, netflix, netflix));
+        assertTrue(Rule.isMusic(0, spotify, home));
+        assertFalse(Rule.isMusic(0, null, home));
+    }
 }

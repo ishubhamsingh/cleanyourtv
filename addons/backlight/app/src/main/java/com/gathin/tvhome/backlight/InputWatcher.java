@@ -48,6 +48,7 @@ public class InputWatcher extends AccessibilityService {
 
     private void evaluate() {
         String front = frontApp();
+        box.front(front);
         String input = rule.lastInput();
         if (input != null) box.prefs().edit().putString(Box.INPUT, input).apply();
         if (!box.prefs().getBoolean(Box.AUTO, true)) return;
