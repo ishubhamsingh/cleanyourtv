@@ -27,9 +27,10 @@ and the line under the title says what is on.
 
 ## Album colours
 
-Only for music: an app that says it plays music (Spotify, YouTube Music) counts whether it is in front or behind;
-one that says movie or speech (Netflix, a video in YouTube) never does; one that doesn't say counts only while it
-plays behind another app, since video apps play only in front.
+Only for music: a music app (Spotify, YouTube Music, Apple Music, Amazon Music, JioSaavn, Wynk, Gaana, Tidal,
+Deezer, SoundCloud) counts whether it is in front or behind; any other app only while it plays behind another one,
+since video apps play only in front (Netflix and YouTube send a poster or thumbnail as artwork too). Apps can also
+say what they play, but on Google TV 14 every one says "unknown".
 
 While music plays away from the sync input, the strip shows what the launcher's
 `my-aurora` background shows: the cover made into four colours (one per quarter, made vivid, a little apart in hue

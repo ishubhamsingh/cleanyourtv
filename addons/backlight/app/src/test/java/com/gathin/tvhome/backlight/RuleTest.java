@@ -57,14 +57,20 @@ public class RuleTest {
 
     @Test
     public void albumColoursAreForMusicNotVideo() {
-        String spotify = "com.spotify.tv.android", netflix = "com.netflix.ninja", home = "com.gathin.tvhome";
-        // What the app says wins: Spotify's music in front or behind, Netflix's movie never.
-        assertTrue(Rule.isMusic(Rule.CONTENT_MUSIC, spotify, spotify));
+        String spotify = "com.spotify.tv.android", netflix = "com.netflix.ninja", youtube = "com.google.android.youtube.tv",
+                home = "com.gathin.tvhome";
+        // As on Google TV 14, where every app says "unknown": a music app counts in front or behind.
+        assertTrue(Rule.isMusic(0, spotify, spotify));
+        assertTrue(Rule.isMusic(0, spotify, home));
+        // Video apps play in front: not music.
+        assertFalse(Rule.isMusic(0, netflix, netflix));
+        assertFalse(Rule.isMusic(0, youtube, youtube));
+        // Any other app behind Home: music.
+        assertTrue(Rule.isMusic(0, "some.radio.app", home));
+        assertFalse(Rule.isMusic(0, null, home));
+        // An app that says what it plays is taken at its word.
+        assertTrue(Rule.isMusic(Rule.CONTENT_MUSIC, "some.app", "some.app"));
         assertFalse(Rule.isMusic(Rule.CONTENT_MOVIE, netflix, home));
         assertFalse(Rule.isMusic(Rule.CONTENT_SPEECH, "podcasts", home));
-        // An app that doesn't say: music only while it plays behind another app.
-        assertFalse(Rule.isMusic(0, netflix, netflix));
-        assertTrue(Rule.isMusic(0, spotify, home));
-        assertFalse(Rule.isMusic(0, null, home));
     }
 }

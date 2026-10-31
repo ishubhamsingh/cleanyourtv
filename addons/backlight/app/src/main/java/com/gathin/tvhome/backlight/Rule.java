@@ -54,15 +54,24 @@ final class Rule {
     }
 
     /**
-     * Whether a playing media session is music, for the album colours. Apps say what they play (AudioAttributes'
-     * content type): music is music, a movie or speech is not. An app that doesn't say counts as music only while
-     * it plays behind another app: video apps play only in front (Netflix sends its poster as artwork too).
+     * Whether a playing media session is music, for the album colours. A music app always is. Otherwise what the app
+     * says it plays (AudioAttributes' content type), though on Google TV 14 every app says "unknown"; and failing
+     * that, only while it plays behind another app: video apps play only in front (Netflix and YouTube send a poster
+     * or thumbnail as artwork too).
      */
     static boolean isMusic(int contentType, String sessionPackage, String frontPackage) {
+        if (sessionPackage != null && MUSIC_APPS.contains(sessionPackage)) return true;
         if (contentType == CONTENT_MUSIC) return true;
         if (contentType == CONTENT_MOVIE || contentType == CONTENT_SPEECH) return false;
         return sessionPackage != null && !sessionPackage.equals(frontPackage);
     }
+
+    /** Music apps on Android TV (and their phone builds, for TVs that run those). */
+    static final java.util.Set<String> MUSIC_APPS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "com.spotify.tv.android", "com.spotify.music", "com.google.android.youtube.tvmusic",
+            "com.google.android.apps.youtube.music", "com.apple.android.music", "com.amazon.mp3",
+            "com.jio.media.jiobeats", "com.bsbportal.music", "com.gaana", "com.aspiro.tidal", "deezer.android.tv",
+            "deezer.android.app", "com.soundcloud.android"));
 
     /** AudioAttributes.CONTENT_TYPE_SPEECH, _MUSIC and _MOVIE, here so the tests run on a plain JVM. */
     static final int CONTENT_SPEECH = 1, CONTENT_MUSIC = 2, CONTENT_MOVIE = 3;
