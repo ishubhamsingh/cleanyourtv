@@ -7,7 +7,5 @@ ip=
 sync_inputs=HDMI 4
 # The TV's own app for HDMI inputs (Sony: com.sony.dtv.tvlin).
 input_app=com.sony.dtv.tvlin
-# The data point and the two values: the LDD11 MAX's Sync and Calm scene. README: "Another box".
-dp=25
+# Sync's starting diffusion: 80, 81 or 82 (Low, Medium, High) then 30 zeros; the controller changes it.
 sync_value=82000000000000000000000000000000
-other_value=88000000000000000000000000000000

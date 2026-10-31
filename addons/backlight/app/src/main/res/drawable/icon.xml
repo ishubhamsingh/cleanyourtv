@@ -1,9 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The app icon: the banner's glowing screen, square. -->
+<!-- The app icon: the banner's glowing TV, square. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="48dp" android:height="48dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FF101418" android:pathData="M0,0h108v108h-108z" />
-    <path android:fillColor="#888E6CF0" android:pathData="M18,26h72a10,10 0,0 1,10 10v36a10,10 0,0 1,-10 10h-72a10,10 0,0 1,-10 -10v-36a10,10 0,0 1,10 -10z" />
-    <path android:fillColor="#FF05070A" android:pathData="M24,34h60v40h-60z" />
+    <path android:fillColor="#FF0C0E13" android:pathData="M0,0h108v108h-108z" />
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="36" android:centerY="46" android:gradientRadius="50">
+                <item android:offset="0" android:color="#FF8E6CF0" />
+                <item android:offset="1" android:color="#008E6CF0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="74" android:centerY="50" android:gradientRadius="48">
+                <item android:offset="0" android:color="#E634C6E0" />
+                <item android:offset="1" android:color="#0034C6E0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="80" android:gradientRadius="36">
+                <item android:offset="0" android:color="#D9FFB46B" />
+                <item android:offset="1" android:color="#00FFB46B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#FF05070A" android:strokeColor="#40FFFFFF" android:strokeWidth="1.2"
+        android:pathData="M27,34h54a4,4 0,0 1,4 4v30a4,4 0,0 1,-4 4h-54a4,4 0,0 1,-4 -4v-30a4,4 0,0 1,4 -4z" />
 </vector>

@@ -2,19 +2,52 @@
 <resources>
     <string name="app_name">Backlight</string>
     <string name="service_label">Backlight input watcher</string>
-    <string name="service_description">Switches your TV backlight\'s sync box to Sync on the inputs you chose and back to its scene everywhere else. It only looks at which app is in front and the name of the TV input.</string>
-    <string name="rule">Sync on %1$s, the scene everywhere else.</string>
+    <string name="service_description">Switches your TV backlight\'s sync box to Sync on the inputs you chose and back to your look everywhere else. It only looks at which app is in front and the name of the TV input.</string>
     <string name="mode_sync">Sync</string>
     <string name="mode_other">Scene</string>
+    <string name="calm">Calm</string>
+    <string name="colour">Colour</string>
+    <string name="music_mode">Music</string>
+    <string name="power_on">On</string>
+    <string name="power_off">Off</string>
+    <string name="power_chip_on">Light: On</string>
+    <string name="power_chip_off">Light: Off</string>
     <string name="auto_on">Automatic: On</string>
     <string name="auto_off">Automatic: Off</string>
-    <string name="sync_now">Sync now</string>
-    <string name="other_now">Scene now</string>
-    <string name="status_idle">Waiting for the next input change.</string>
+    <string name="album_on">Album colours: On</string>
+    <string name="album_off">Album colours: Off</string>
+    <string name="album_now">Album colours, from what\'s playing</string>
+    <string name="section_sync">Sync</string>
+    <string name="sync_hint">Automatic picks it on %1$s.</string>
+    <string name="section_scenes">Scenes</string>
+    <string name="section_colours">Calm and colours</string>
+    <string name="section_brightness">Brightness</string>
+    <string name="away_look">Away from %1$s: %2$s. Pick a scene, a white or a colour to change it.</string>
     <string name="status_sent">%1$s at %2$s</string>
     <string name="status_failed">%1$s failed at %3$s: %2$s</string>
+    <string name="status_unreachable">The box didn\'t answer at %2$s: %1$s</string>
     <string name="status_no_key">No box set up: add its device ID and local key to backlight.properties and build again.</string>
-    <string name="status_ip">Box at %1$s</string>
-    <string name="status_input">Last input: %1$s</string>
     <string name="error_not_found">the box isn\'t on this network</string>
+    <string-array name="sync_levels">
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+    <string-array name="temps">
+        <item>Warmest</item>
+        <item>Warm</item>
+        <item>Neutral</item>
+        <item>Cool</item>
+        <item>Coolest</item>
+    </string-array>
+    <string-array name="hues">
+        <item>Red</item>
+        <item>Orange</item>
+        <item>Amber</item>
+        <item>Green</item>
+        <item>Teal</item>
+        <item>Blue</item>
+        <item>Violet</item>
+        <item>Pink</item>
+    </string-array>
 </resources>

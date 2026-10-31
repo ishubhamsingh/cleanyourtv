@@ -1,10 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The TV banner: a dark screen with a violet-to-cyan glow behind it. Drawn for this add-on, no third-party art. -->
+<!-- The TV banner: a TV with its backlight glowing out behind it in the aurora's colours (violet, cyan, amber).
+     Drawn for this add-on, no third-party art. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="320dp" android:height="180dp"
     android:viewportWidth="320" android:viewportHeight="180">
-    <path android:fillColor="#FF101418" android:pathData="M0,0h320v180h-320z" />
-    <path android:fillColor="#668E6CF0" android:pathData="M70,30h180a24,24 0,0 1,24 24v72a24,24 0,0 1,-24 24h-180a24,24 0,0 1,-24 -24v-72a24,24 0,0 1,24 -24z" />
-    <path android:fillColor="#5534C6E0" android:pathData="M80,40h160a18,18 0,0 1,18 18v64a18,18 0,0 1,-18 18h-160a18,18 0,0 1,-18 -18v-64a18,18 0,0 1,18 -18z" />
-    <path android:fillColor="#FF05070A" android:pathData="M88,50h144v80h-144z" />
+    <path android:fillColor="#FF0C0E13" android:pathData="M0,0h320v180h-320z" />
+    <!-- The glow: three soft clouds behind the screen. -->
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="112" android:centerY="78" android:gradientRadius="110">
+                <item android:offset="0" android:color="#FF8E6CF0" />
+                <item android:offset="1" android:color="#008E6CF0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="214" android:centerY="84" android:gradientRadius="105">
+                <item android:offset="0" android:color="#E634C6E0" />
+                <item android:offset="1" android:color="#0034C6E0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h320v180h-320z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="160" android:centerY="140" android:gradientRadius="80">
+                <item android:offset="0" android:color="#CCFFB46B" />
+                <item android:offset="1" android:color="#00FFB46B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- The TV: a dark screen with a thin bezel. -->
+    <path android:fillColor="#FF05070A" android:strokeColor="#40FFFFFF" android:strokeWidth="1.5"
+        android:pathData="M90,46h140a6,6 0,0 1,6 6v76a6,6 0,0 1,-6 6h-140a6,6 0,0 1,-6 -6v-76a6,6 0,0 1,6 -6z" />
+    <path android:pathData="M94,50h132v80h-132z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="94" android:startY="50" android:endX="226" android:endY="130">
+                <item android:offset="0" android:color="#262A2F45" />
+                <item android:offset="1" android:color="#0805070A" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

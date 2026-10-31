@@ -78,6 +78,33 @@ public class TuyaTest {
         assertNull(Tuya.announcement(broken));
     }
 
+    private static final String MULTI = "000055aa000000040000000d000000a4e83c44d2b11a6f3c76eb5859bc3390fbd78326e53d680c0218d3ac3dee846cccaa9107ec337ba666a06cb6dd2be9e168115d7c28c26099e78b85cb89b70f8269ea6f2d9c1d12e5ad7197e480dfdbf433d58ebf26ad8b67e505bf17a26ac7c43139b1ec4e9f405a8b67f75efdee4d6d541d1592b02dc9ad600dd75be0a0ef64c00a538c733de727cb29f90810b65b30aa9442a7a363cd5b914fb2eaac2bd119c50000aa55";
+    private static final String QUERY = "000055aa000000050000001000000034ab68d585934ba7904dc91500288a5a46038050a1a14372f696643c877c0042ca798fe7b82bee732740b843fd83021cfe0000aa55";
+    private static final String STATUS = "000055aa0000000500000010000000980000000085db3d39bda2dbd7a958bf730d691150dd04338602b67f20dd2d2daf32d18ed5ce9cc5b83d15180e5a0ffb059e09d17c2e2d8c6bc4623d1ae94a56d0d48321c5f99575a39617242609cf237d0e0ee161d58ebf26ad8b67e505bf17a26ac7c4317eea9adcefde627623e503215975df8521b903e36114857e37b8771cf1e4df257d46ba0036e251267b2f4ea24b8450ea0000aa55";
+
+    @Test
+    public void severalValuesGoInOneFrameModeFirst() {
+        java.util.Map<String, String> dps = Looks.scene(0x88);
+        String json = Tuya.controlJson(dps, 1700000000L);
+        assertEquals(MULTI, hex(Tuya.pack(4, Tuya.CONTROL_NEW, Tuya.controlPayload(bytes(SESSION), json), bytes(SESSION))));
+    }
+
+    @Test
+    public void theStatusQueryAndItsAnswerMatchTinytuya() throws Exception {
+        byte[] sk = bytes(SESSION);
+        assertEquals(QUERY, hex(Tuya.pack(5, Tuya.DP_QUERY_NEW, Tuya.aes(sk, "{}".getBytes(StandardCharsets.UTF_8), true, true), sk)));
+        Looks.State s = new Looks.State();
+        s.update(Tuya.replyText(sk, Tuya.unpack(bytes(STATUS), sk).payload));
+        assertEquals("colour", s.mode);
+        assertEquals(5, s.hueIndex());
+    }
+
+    @Test
+    public void theHeartbeatMatchesTinytuya() {
+        byte[] sk = bytes(SESSION);
+        assertEquals("000055aa000000060000000900000074dc02555f5a20b398050f5ed401c04d1173ba5592a9dcb486bc07a38fee7a3dd7ac88a14df95ef5f8285ac05b304fbfa0d3039d09c1b18a47cc4962b0a05f4f2e49f530bcf4149e01a9f658d6f702b3dce04a91b62cbb0a0b3b7928ce45ce064786abc8086219efffbdb66be4fa66d1350000aa55", hex(Tuya.pack(6, Tuya.HEART_BEAT, Tuya.heartbeatPayload(sk, "bf0123456789abcdefxyzq"), sk)));
+    }
+
     @Test
     public void valuesKeepTheirJsonType() {
         assertEquals("true", Tuya.jsonValue("true"));

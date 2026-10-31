@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build Backlight, install it on the TV and switch on its input watcher (an accessibility service that only sees
-# which app is in front and the TV input's name), keeping any other accessibility services on.
+# which app is in front and the TV input's name), keeping any other accessibility services on, and its media
+# listener (album colours: the playing cover, no notifications).
 #
 # Usage: TV_HOST=192.168.1.50 addons/backlight/build-and-install.sh
 #        TV_HOST=192.168.1.50 addons/backlight/build-and-install.sh --uninstall
@@ -30,4 +31,6 @@ tv "pm install -r /data/local/tmp/backlight.apk; rm -f /data/local/tmp/backlight
 # Add the service to the enabled list without switching off the ones already there. An update restarts the app,
 # which drops its service from Android's bound list: re-writing the list binds it again.
 tv "s=\$(settings get secure enabled_accessibility_services); case :\$s: in *:$SVC:*) settings put secure enabled_accessibility_services ''; sleep 1; settings put secure enabled_accessibility_services \$s;; *) if [ -z \$s ] || [ \$s = null ]; then s=$SVC; else s=\$s:$SVC; fi; settings put secure enabled_accessibility_services \$s;; esac; settings put secure accessibility_enabled 1"
-echo "Installed. Switch to your sync input and back to Home: the light follows. Open Backlight to check or test."
+# Album colours read the playing cover from media sessions, which Android shows only to a notification listener.
+tv "cmd notification allow_listener $PKG/$PKG.MediaListener"
+echo "Installed. Switch to your sync input and back to Home: the light follows. Open Backlight for the controls."

@@ -46,5 +46,16 @@
             </intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/input_watcher" />
         </service>
+        <!-- Album colours: sees what plays and its cover through media sessions. Android gives that only to a
+             notification listener; no notification is read. Granted by build-and-install.sh. -->
+        <service
+            android:name=".MediaListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

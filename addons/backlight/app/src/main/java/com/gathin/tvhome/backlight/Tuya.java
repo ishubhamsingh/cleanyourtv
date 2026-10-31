@@ -13,6 +13,8 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.CRC32;
 
 import javax.crypto.Cipher;
@@ -29,7 +31,7 @@ final class Tuya {
     }
 
     static final int PORT = 6668, BROADCAST_PORT = 6667;
-    static final int NEG_START = 3, NEG_RESP = 4, NEG_FINISH = 5, CONTROL_NEW = 13;
+    static final int NEG_START = 3, NEG_RESP = 4, NEG_FINISH = 5, HEART_BEAT = 9, CONTROL_NEW = 13, DP_QUERY_NEW = 16;
     private static final int PREFIX = 0x000055AA, SUFFIX = 0x0000AA55;
     private static final byte[] VERSION_HEADER = new byte[15];
     /** The key every Tuya device encrypts its UDP announcement with: md5("yGAdlopoPVldABfn"). */
@@ -111,7 +113,21 @@ final class Tuya {
 
     /** The JSON a 3.4 box takes to set data points, without spaces (the box ignores it otherwise). */
     static String controlJson(String dp, String value, long seconds) {
-        return "{\"protocol\":5,\"t\":" + seconds + ",\"data\":{\"dps\":{\"" + escape(dp) + "\":" + jsonValue(value) + "}}}";
+        Map<String, String> one = new LinkedHashMap<>();
+        one.put(dp, value);
+        return controlJson(one, seconds);
+    }
+
+    /** Several data points at once, in the map's order (the mode before the scene, say). */
+    static String controlJson(Map<String, String> dps, long seconds) {
+        StringBuilder b = new StringBuilder("{\"protocol\":5,\"t\":").append(seconds).append(",\"data\":{\"dps\":{");
+        boolean first = true;
+        for (Map.Entry<String, String> e : dps.entrySet()) {
+            if (!first) b.append(',');
+            first = false;
+            b.append('"').append(escape(e.getKey())).append("\":").append(jsonValue(e.getValue()));
+        }
+        return b.append("}}}").toString();
     }
 
     /** true, false and numbers go as they are; anything else as a string. */
@@ -130,6 +146,12 @@ final class Tuya {
         byte[] plain = Arrays.copyOf(VERSION_HEADER, VERSION_HEADER.length + js.length);
         System.arraycopy(js, 0, plain, VERSION_HEADER.length, js.length);
         return aes(sessionKey, plain, true, true);
+    }
+
+    /** A heartbeat's payload: the device ID twice, encrypted with the session key (no "3.4" header). */
+    static byte[] heartbeatPayload(byte[] sessionKey, String deviceId) {
+        String id = escape(deviceId);
+        return aes(sessionKey, ("{\"gwId\":\"" + id + "\",\"devId\":\"" + id + "\"}").getBytes(StandardCharsets.UTF_8), true, true);
     }
 
     /** A reply's text: decrypted, with the "3.4" header taken off. */
@@ -168,39 +190,108 @@ final class Tuya {
         }
     }
 
-    /**
-     * Connects, negotiates a session and sets {@code dp} to {@code value}. Returns the box's reply, which names
-     * the data point it changed. Throws when the box is unreachable, the key is wrong or it doesn't answer.
-     */
+    /** One-shot: connect, set one data point, close. */
     static String set(String host, String localKey, String dp, String value, int timeoutMs) throws IOException {
-        byte[] key = localKey.getBytes(StandardCharsets.UTF_8);
-        if (key.length != 16) throw new IOException("the local key must be 16 characters");
-        byte[] nonce = new byte[16];
-        new SecureRandom().nextBytes(nonce);
-        try (Socket s = new Socket()) {
-            s.connect(new InetSocketAddress(host, PORT), timeoutMs);
-            s.setSoTimeout(timeoutMs);
-            OutputStream out = s.getOutputStream();
-            InputStream in = s.getInputStream();
-            out.write(pack(1, NEG_START, aes(key, nonce, true, true), key));
-            Frame step2 = readUntil(in, key, NEG_RESP);
-            byte[] session = sessionKey(key, nonce, step2.payload);
-            if (session == null) throw new IOException("the box rejected the key");
-            byte[] remote = remoteNonce(key, step2.payload);
-            out.write(pack(2, NEG_FINISH, aes(key, hmac(key, remote), true, true), key));
-            String json = controlJson(dp, value, System.currentTimeMillis() / 1000);
-            out.write(pack(3, CONTROL_NEW, controlPayload(session, json), session));
+        Map<String, String> one = new LinkedHashMap<>();
+        one.put(dp, value);
+        try (Session s = new Session(host, localKey, timeoutMs)) {
+            return s.set(one);
+        }
+    }
+
+    /**
+     * A connection with its session key, kept open for a run of commands (a brightness bar, a colour fade). Not
+     * thread-safe: one worker thread uses it. Throws when the box is unreachable, the key is wrong or it doesn't
+     * answer; the caller opens a new one.
+     */
+    static final class Session implements java.io.Closeable {
+        private final Socket socket = new Socket();
+        private final OutputStream out;
+        private final InputStream in;
+        private final byte[] session;
+        private final int timeoutMs;
+        private int seq = 3;
+
+        Session(String host, String localKey, int timeoutMs) throws IOException {
+            this.timeoutMs = timeoutMs;
+            byte[] key = localKey.getBytes(StandardCharsets.UTF_8);
+            if (key.length != 16) throw new IOException("the local key must be 16 characters");
+            byte[] nonce = new byte[16];
+            new SecureRandom().nextBytes(nonce);
+            try {
+                socket.connect(new InetSocketAddress(host, PORT), timeoutMs);
+                socket.setSoTimeout(timeoutMs);
+                out = socket.getOutputStream();
+                in = socket.getInputStream();
+                out.write(pack(1, NEG_START, aes(key, nonce, true, true), key));
+                Frame step2 = readUntil(in, key, NEG_RESP);
+                session = sessionKey(key, nonce, step2.payload);
+                if (session == null) throw new IOException("the box rejected the key");
+                byte[] remote = remoteNonce(key, step2.payload);
+                out.write(pack(2, NEG_FINISH, aes(key, hmac(key, remote), true, true), key));
+                out.flush();
+            } catch (IOException e) {
+                socket.close();
+                throw e;
+            }
+        }
+
+        /** Sets the data points; returns the box's report of the new values (or the last reply). */
+        String set(Map<String, String> dps) throws IOException {
+            skipWaiting();
+            String json = controlJson(dps, System.currentTimeMillis() / 1000);
+            out.write(pack(seq++, CONTROL_NEW, controlPayload(session, json), session));
             out.flush();
-            // The box acks the command (empty), then reports the new value (cmd 8, STATUS).
+            // The box acks the command, then reports only the values that changed (none, for a colour it already
+            // shows): the ack, or a report naming any of them, is the answer.
+            long end = System.currentTimeMillis() + timeoutMs;
+            while (System.currentTimeMillis() < end) {
+                Frame f = read(in, session);
+                if (f.retcode != 0) throw new IOException("the box refused it (" + f.retcode + ")");
+                if (f.cmd == CONTROL_NEW) return "";
+                String reply = replyText(session, f.payload);
+                for (String dp : dps.keySet()) if (reply.contains("\"" + dp + "\"")) return reply;
+            }
+            throw new IOException("no answer");
+        }
+
+        /** Reads past what the box sent on its own (reports of changes made elsewhere), so answers line up. */
+        private void skipWaiting() throws IOException {
+            while (in.available() >= 16) read(in, session);
+        }
+
+        /** Keeps the connection: the box drops one that says nothing for about 30 seconds. */
+        void heartbeat(String deviceId) throws IOException {
+            skipWaiting();
+            out.write(pack(seq++, HEART_BEAT, heartbeatPayload(session, deviceId), session));
+            out.flush();
+            read(in, session);
+        }
+
+        /** Every data point's value now, as the box's JSON ({"dps":{...}}). */
+        String status() throws IOException {
+            skipWaiting();
+            out.write(pack(seq++, DP_QUERY_NEW, aes(session, "{}".getBytes(StandardCharsets.UTF_8), true, true), session));
+            out.flush();
+            return replyContaining("\"dps\"");
+        }
+
+        /** The box acks a command (empty) and then reports the change; reads until the report or the timeout. */
+        private String replyContaining(String what) throws IOException {
             long end = System.currentTimeMillis() + timeoutMs;
             String reply = "";
             while (System.currentTimeMillis() < end) {
                 Frame f = read(in, session);
                 if (f.retcode != 0) throw new IOException("the box refused it (" + f.retcode + ")");
                 reply = replyText(session, f.payload);
-                if (reply.contains("\"" + dp + "\"")) return reply;
+                if (reply.contains(what)) return reply;
             }
             return reply;
+        }
+
+        @Override
+        public void close() throws IOException {
+            socket.close();
         }
     }
 

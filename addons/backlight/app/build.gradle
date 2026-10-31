@@ -23,10 +23,8 @@ android {
         buildConfigField 'String', 'IP', "\"${prop('ip', '')}\""
         buildConfigField 'String', 'SYNC_INPUTS', "\"${prop('sync_inputs', 'HDMI 4')}\""
         buildConfigField 'String', 'INPUT_APP', "\"${prop('input_app', 'com.sony.dtv.tvlin')}\""
-        buildConfigField 'String', 'DP', "\"${prop('dp', '25')}\""
-        // The LDD11 MAX's Sync and its Calm scene; another box: watch its data points while you tap the app (README).
+        // Sync's starting diffusion (the controller changes it): the LDD11 MAX's High.
         buildConfigField 'String', 'SYNC_VALUE', "\"${prop('sync_value', '82000000000000000000000000000000')}\""
-        buildConfigField 'String', 'OTHER_VALUE', "\"${prop('other_value', '88000000000000000000000000000000')}\""
     }
 
     buildFeatures {

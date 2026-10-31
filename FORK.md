@@ -40,7 +40,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Grid by use** | The apps below the dock sort by how often (or how recently) you open them. | `grid_order` |
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
 | **my-glass theme** | The glass look with 14 rotating landscapes, the dashboard, app columns by screen size, round icon-only top buttons, a white outline focus and a 3-minute idle clock. | `themes/my-glass` |
-| **Backlight** | A Tuya HDMI sync box (Smart Life) switches to Sync on your console input and back to a calm scene on Home and the TV's own apps, by itself, over the home network. | `addons/backlight` |
+| **Backlight** | A Tuya HDMI sync box (Smart Life) on Sync for your console input and your look elsewhere, by itself; a controller on the TV in the dashboard's glass; album colours that follow the aurora. | `addons/backlight` |
 
 ## Set up a TV from scratch
 
@@ -185,9 +185,17 @@ again (or *Follow theme*) resets these on-TV choices to the theme's.
 
 An HDMI sync box only sees what passes through it: on the TV's own apps it has nothing to follow. The
 [Backlight](addons/backlight/) add-on switches a Tuya sync box (the ones in the Smart Life app) to **Sync** when the
-TV is on the box's input and to a calm **scene** everywhere else, 2 to 3 seconds after each change, including when
-a console turns the TV over to its input over HDMI-CEC. It talks to the box on the home network only, with the box's
-local key (one-time Tuya developer project; the add-on's README walks through it).
+TV is on the box's input and to your look everywhere else, 2 to 3 seconds after each change, including when a
+console turns the TV over to its input over HDMI-CEC. Its **controller** does what the phone app does, in the
+dashboard's glass: Sync's diffusion, the scenes, Calm's whites, colours and brightness; whatever you pick becomes the
+look away from the console. **Album colours**, while music plays, put the `my-aurora` background's drifting colours
+on the strip: the screen's overall tint, converted for LEDs, on the same clock as the aurora on screen. It talks to
+the box on the home network only, with the box's local key (one-time Tuya developer project; the add-on's README
+walks through it).
+
+<p align="center">
+  <img src="addons/backlight/screenshot.jpg" width="70%" alt="The Backlight controller: Light, Automatic and Album colours switches, Sync Low, Medium and High, the scenes, Calm's five whites and eight colours, and the brightness bar, in a glass panel with an orange glow behind it">
+</p>
 
 ## Remote buttons that stopped working
 
