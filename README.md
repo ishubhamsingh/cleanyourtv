@@ -28,6 +28,7 @@ own. Upstream's full reference (the 290+ tested TV lists, every tool, every them
 | **Now playing everywhere** | The music playing behind Home (Spotify, YouTube Music, ...) on the dashboard, and on the clock screensaver over drifting colours taken from the album art, only while something plays. |
 | **Fits your TV** | Apps per row follow the screen's size (6 on a 55-inch TV). Discover, the cards and the columns can each be changed on the TV: hold OK on the gear → *Launcher settings*. |
 | **Looks** | A white outline focus, glass panels, 14 rotating landscape wallpapers (`my-glass`) or slowly drifting album-art colours (`my-aurora`). |
+| **App switcher** | Hold Back for your last five apps over whatever is playing, the previous one focused: hold Back, OK, and you are back where you were (when Android still holds the app). |
 | **Your remote works** | The app buttons and the gear button work again without Google TV's home, set per TV in a [profile](profiles/README.md). |
 | **Debloated** | Upstream's tested lists turn off the ads, trackers and bloat your TV shipped with. Everything is disabled, never uninstalled, and can be undone. |
 

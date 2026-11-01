@@ -41,6 +41,7 @@ The launcher still has **no internet permission**. Anything online lives in a se
 | **Sony remote keys** | The app keys (Netflix, YouTube, ...) and the gear button work again without Google TV's home. | `app_keys`, `settings_key_scancodes` |
 | **my-glass theme** | The glass look with 14 rotating landscapes, the dashboard, app columns by screen size, round icon-only top buttons, a white outline focus and a 3-minute idle clock. | `themes/my-glass` |
 | **Backlight** | A Tuya HDMI sync box (Smart Life) on Sync for your console input and your look elsewhere, by itself; a controller on the TV in the dashboard's glass; album colours that follow the aurora. | `addons/backlight` |
+| **App switcher** | Hold Back: your last five apps in a glass row over whatever is playing, the one before it focused, so hold Back and OK goes back to it. An app Android still holds comes back where you left it. | `switcher` in `app_keys` |
 
 ## Set up a TV from scratch
 
@@ -196,6 +197,22 @@ walks through it).
 <p align="center">
   <img src="addons/backlight/screenshot.jpg" width="70%" alt="The Backlight controller: Light, Automatic and Album colours switches, Sync Low, Medium and High, the scenes, Calm's five whites and eight colours, and the brightness bar, in a glass panel with an orange glow behind it">
 </p>
+
+## App switcher
+
+Google TV has no recent-apps screen, so going back to the app you were just in means Home, then finding it. With
+`"KEYCODE_BACK:back"` and `"hold:KEYCODE_BACK:switcher"` in `app_keys` (the `sony-bravia-ae2-in` profile has them),
+**holding Back** opens a glass row of the last five apps over whatever is on screen; a short press is still Back.
+
+| | |
+|---|---|
+| **Which apps** | The apps that came to the front, latest first, from Android's usage events: the same usage access as Screen time. Not this launcher, not settings panels, not the screensaver. |
+| **Focus** | The app before the one on screen ("On screen" under it), so hold Back, then OK, flips between two apps. From Home, the latest app. Holding Back again moves along the row. |
+| **Resume or restart** | An app opens through its launch intent, which brings its task back as it was when Android still has it in memory. Android shows no app which others still run, so one it has closed (low memory) starts again; some apps (Netflix's profile picker) also restart themselves after a while away. |
+
+Any button can carry it: `"hold:KEYCODE_PROG_RED:switcher"`, or a tap entry. A `hold:` entry acts as soon as the button
+has been held for half a second, not when it is let go. Keys sent with `adb shell input` do not go through the key
+helper; try it with the real remote.
 
 ## Remote buttons that stopped working
 
