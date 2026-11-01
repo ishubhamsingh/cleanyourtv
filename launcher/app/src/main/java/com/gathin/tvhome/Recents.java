@@ -3,6 +3,7 @@ package com.gathin.tvhome;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,21 +32,30 @@ final class Recents {
     }
 
     /**
-     * {@code pkgs} and {@code classes} are the ACTIVITY_RESUMED events in time order. Only {@code launchable} apps
-     * count (not this launcher, not system panels); {@code self} is this launcher and {@code switcher} its switcher
-     * activity, which resumes as it opens and is not "on screen". The first app is on screen when the last thing
-     * that came to the front before the switcher was that app, not Home.
+     * {@code pkgs}, {@code classes} and {@code times} are the ACTIVITY_RESUMED events in time order. Only
+     * {@code launchable} apps count (not this launcher, not system panels); {@code self} is this launcher and
+     * {@code switcher} its switcher activity, which resumes as it opens and is not "on screen". An app removed from
+     * the list ({@code removed}: package to when) comes back only once it has been in front again since. The first
+     * app is on screen when the last thing that came to the front before the switcher was that app, not Home.
      */
-    static Result from(String[] pkgs, String[] classes, Set<String> launchable, String self, String switcher, int max) {
+    static Result from(String[] pkgs, String[] classes, long[] times, Set<String> launchable, String self,
+                       String switcher, int max, Map<String, Long> removed) {
         Set<String> apps = new LinkedHashSet<>();
-        Boolean appInFront = null;
+        String front = null;
+        boolean frontKnown = false;
         for (int i = pkgs.length - 1; i >= 0 && apps.size() < max; i--) {
             String pkg = pkgs[i];
             if (pkg == null) continue;
             if (pkg.equals(self) && switcher.equals(classes[i])) continue;
-            if (appInFront == null) appInFront = !pkg.equals(self) && launchable.contains(pkg);
-            if (!pkg.equals(self) && launchable.contains(pkg)) apps.add(pkg);
+            boolean app = !pkg.equals(self) && launchable.contains(pkg);
+            if (!frontKnown) {
+                frontKnown = true;
+                front = app ? pkg : null;
+            }
+            Long gone = removed.get(pkg);
+            if (app && (gone == null || times[i] > gone)) apps.add(pkg);
         }
-        return new Result(new ArrayList<>(apps), appInFront != null && appInFront);
+        List<String> list = new ArrayList<>(apps);
+        return new Result(list, front != null && !list.isEmpty() && list.get(0).equals(front));
     }
 }

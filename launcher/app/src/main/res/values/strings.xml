@@ -25,6 +25,10 @@
     <string name="switcher_on_screen">On screen</string>
     <string name="switcher_empty">No apps opened yet</string>
     <string name="switcher_no_usage">Needs usage access, the same as Screen time (see FORK.md)</string>
+    <string name="switcher_hold_hint">Hold OK to hide or force stop</string>
+    <string name="switcher_remove">Hide from this list</string>
+    <string name="switcher_force_stop">Force stop…</string>
+    <string name="switcher_force_stop_hint">IN SETTINGS</string>
     <string name="cant_open">Can\'t open %1$s</string>
     <string name="date_format">EEEE  d MMMM</string>
     <!-- Date next to the clock on Home; a locale can split it over two lines with \n. -->

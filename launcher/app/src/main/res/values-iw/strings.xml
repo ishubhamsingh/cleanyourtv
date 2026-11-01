@@ -211,5 +211,9 @@
     <string name="switcher_on_screen">על המסך</string>
     <string name="switcher_empty">עדיין לא נפתחו אפליקציות</string>
     <string name="switcher_no_usage">נדרשת גישה לנתוני שימוש, כמו בזמן מסך (ראו FORK.md)</string>
+    <string name="switcher_hold_hint">לחיצה ארוכה על OK להסתרה או לעצירה</string>
+    <string name="switcher_remove">הסתרה מהרשימה</string>
+    <string name="switcher_force_stop">עצירה בכפייה…</string>
+    <string name="switcher_force_stop_hint">בהגדרות</string>
     <string name="discover_liked_state">אהבתי</string>
 </resources>

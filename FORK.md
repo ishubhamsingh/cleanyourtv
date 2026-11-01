@@ -209,6 +209,7 @@ Google TV has no recent-apps screen, so going back to the app you were just in m
 | **Which apps** | The apps that came to the front, latest first, from Android's usage events: the same usage access as Screen time. Not this launcher, not settings panels, not the screensaver. |
 | **Focus** | The app before the one on screen ("On screen" under it), so hold Back, then OK, flips between two apps. From Home, the latest app. Holding Back again moves along the row. |
 | **Resume or restart** | An app opens through its launch intent, which brings its task back as it was when Android still has it in memory. Android shows no app which others still run, so one it has closed (low memory) starts again; some apps (Netflix's profile picker) also restart themselves after a while away. |
+| **Hold OK on an app** | *Hide from this list* takes it off the row until you next open it (it keeps running). *Force stop…* opens its App info page in Settings: OK on Force stop, OK to confirm. No app may stop another itself, so Settings does it. |
 
 Any button can carry it: `"hold:KEYCODE_PROG_RED:switcher"`, or a tap entry. A `hold:` entry acts as soon as the button
 has been held for half a second, not when it is let go. Keys sent with `adb shell input` do not go through the key
