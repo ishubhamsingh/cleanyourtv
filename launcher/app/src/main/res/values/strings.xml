@@ -20,6 +20,11 @@
     <string name="ethernet">Ethernet</string>
     <string name="offline">Offline</string>
     <string name="not_available">Not available on this TV</string>
+    <!-- The app switcher (SwitcherActivity). -->
+    <string name="switcher_title">Recent apps</string>
+    <string name="switcher_on_screen">On screen</string>
+    <string name="switcher_empty">No apps opened yet</string>
+    <string name="switcher_no_usage">Needs usage access, the same as Screen time (see FORK.md)</string>
     <string name="cant_open">Can\'t open %1$s</string>
     <string name="date_format">EEEE  d MMMM</string>
     <!-- Date next to the clock on Home; a locale can split it over two lines with \n. -->
@@ -179,6 +184,8 @@
     <string name="discover_open_in">Open in %1$s</string>
     <string name="discover_like">More like this</string>
     <string name="discover_liked">Noted: more like this</string>
+    <!-- The poster menu's row for a title already liked (here or as a TMDB favourite). -->
+    <string name="discover_liked_state">Liked</string>
     <string name="discover_hide">Not interested</string>
     <string name="discover_hidden">You won’t see “%1$s” again</string>
     <string name="discover_not_on_apps">Not on your apps</string>

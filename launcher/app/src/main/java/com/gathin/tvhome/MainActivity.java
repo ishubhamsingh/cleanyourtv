@@ -2524,7 +2524,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (240 * density));
         if (item.playable()) addSettingsMenuRow(rows, popup, R.drawable.ic_open_app, getString(R.string.discover_open_in, item.app), () -> openTitle(item));
-        addSettingsMenuRow(rows, popup, R.drawable.ic_thumb_up, getString(item.liked ? R.string.discover_liked : R.string.discover_like), () -> {
+        addSettingsMenuRow(rows, popup, R.drawable.ic_thumb_up, getString(item.liked ? R.string.discover_liked_state : R.string.discover_like), () -> {
             discover.like(item);
             Toast.makeText(this, R.string.discover_liked, Toast.LENGTH_SHORT).show();
         });

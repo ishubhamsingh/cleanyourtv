@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.tv.TvContract;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.KeyEvent;
 
@@ -28,12 +30,16 @@ import java.util.regex.Pattern;
  * the same for a scancode. One set of maps for both services; whichever filters the key first consumes it.
  * A target of "input:<input id>" switches to that TV input (an HDMI port) instead of opening an app, a target
  * of "inputs" opens the input switcher, for a remote whose source button sends a key Android does not map, and
- * one of the action words (back, home, recents, mute, sleep, screensaver, settings, wifi) does that action.
+ * one of the action words (back, home, recents, mute, sleep, screensaver, settings, wifi, switcher) does that
+ * action. A "hold:" entry acts as soon as the button has been held for HOLD_MS.
  */
 final class RemoteKeys {
 
     /** How long a button is held before its "hold:" entry wins (Android's long-press timeout). */
     static final long HOLD_MS = 500;
+
+    /** The app_keys action that opens the app switcher (SwitcherActivity), as "hold:KEYCODE_BACK:switcher". */
+    static final String SWITCHER = "switcher";
 
     /** The app_keys target that opens the input switcher, as "scan:365:inputs". */
     static final String INPUTS = "inputs";
@@ -148,11 +154,35 @@ final class RemoteKeys {
      */
     static boolean handle(Context ctx, KeyEvent event, String app, String holdApp) {
         if (app == null && holdApp == null) return false;
-        if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-            launch(ctx, target(app, holdApp, event.getEventTime() - event.getDownTime()));
+        if (holdApp != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            // A hold acts once the button has been held long enough, as Android's own long presses do, not when
+            // it is let go. Key repeats are made after accessibility filtering, so a timer it is.
+            hold().removeCallbacksAndMessages(null);
+            holdFired = false;
+            hold().postDelayed(() -> {
+                holdFired = true;
+                launch(ctx, holdApp);
+            }, HOLD_MS);
+        }
+        if (event.getAction() == KeyEvent.ACTION_UP) {
+            hold().removeCallbacksAndMessages(null);
+            boolean fired = holdFired;
+            holdFired = false;
+            if (!event.isCanceled() && !fired) {
+                launch(ctx, target(app, holdApp, event.getEventTime() - event.getDownTime()));
+            }
         }
         return true;
     }
+
+    /** The pending hold of the button down now, and whether it has already acted. Keys come on the main thread. */
+    private static Handler hold;
+
+    private static Handler hold() {
+        if (hold == null) hold = new Handler(Looper.getMainLooper());
+        return hold;
+    }
+    private static boolean holdFired;
 
     /** The app a mapped key opens: its hold entry after HOLD_MS, otherwise its normal one. */
     static String target(String app, String holdApp, long heldMs) {
@@ -184,7 +214,7 @@ final class RemoteKeys {
     static boolean isAction(String target) {
         switch (target) {
             case "back": case "home": case "recents": case "mute": case "sleep":
-            case "screensaver": case "settings": case "wifi":
+            case "screensaver": case "settings": case "wifi": case SWITCHER:
                 return true;
             default:
                 return false;
@@ -219,6 +249,9 @@ final class RemoteKeys {
                 break;
             case "wifi":
                 start(ctx, SystemSettings.intent(ctx, Settings.ACTION_WIFI_SETTINGS));
+                break;
+            case SWITCHER:
+                start(ctx, new Intent(ctx, SwitcherActivity.class).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION));
                 break;
             default:
                 break;   // "sleep" below Android 9: consumed, nothing to do

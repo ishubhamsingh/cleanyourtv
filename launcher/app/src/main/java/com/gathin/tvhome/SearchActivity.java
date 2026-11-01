@@ -277,7 +277,7 @@ public class SearchActivity extends Activity {
         if (item.playable()) addRow(rows, popup, getString(R.string.discover_open_in, item.app), () -> {
             if (discover.open(this, item)) Frecency.record(this, item.pkg);
         });
-        addRow(rows, popup, getString(item.liked ? R.string.discover_liked : R.string.discover_like), () -> {
+        addRow(rows, popup, getString(item.liked ? R.string.discover_liked_state : R.string.discover_like), () -> {
             discover.like(item);
             Toast.makeText(this, R.string.discover_liked, Toast.LENGTH_SHORT).show();
         });

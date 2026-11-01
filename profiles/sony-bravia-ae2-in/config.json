@@ -9,6 +9,8 @@
     "scan:485:com.google.android.youtube.tv",
     "scan:490:com.amazon.amazonvideo.livingroom",
     "scan:507:com.crunchyroll.crunchyroid",
-    "scan:509:com.sonyliv"
+    "scan:509:com.sonyliv",
+    "KEYCODE_BACK:back",
+    "hold:KEYCODE_BACK:switcher"
   ]
 }
